@@ -74,6 +74,7 @@
 #include "ability.h"
 #include "action/action.h"
 #include "battlefield.h"
+#include "campaign_system.h"
 #include "conquest_system.h"
 #include "daily_system.h"
 #include "fishingcontest.h"
@@ -253,6 +254,14 @@ void init(IPP mapIPP, bool isRunningInCI)
     lua.set_function("GetNationRank", &luautils::GetNationRank);
     lua.set_function("GetConquestBalance", &luautils::GetConquestBalance);
     lua.set_function("IsConquestAlliance", &luautils::IsConquestAlliance);
+    lua.set_function("CampaignTally", &luautils::CampaignTally);
+    lua.set_function("CampaignUpdate", &luautils::CampaignUpdate);
+    lua.set_function("CampaignRefresh", &luautils::CampaignRefresh);
+    lua.set_function("CampaignSetInfluence", &luautils::CampaignSetInfluence);
+    lua.set_function("CampaignSetFortification", &luautils::CampaignSetFortification);
+    lua.set_function("CampaignSetZoneControl", &luautils::CampaignSetZoneControl);
+    lua.set_function("CampaignSetBattleStatus", &luautils::CampaignSetBattleStatus);
+    lua.set_function("GetCampaignStatus", &luautils::GetCampaignStatus);
     lua.set_function("SpawnMob", &luautils::SpawnMob);
     lua.set_function("DespawnMob", &luautils::DespawnMob);
     lua.set_function("GetPlayerByName", &luautils::GetPlayerByName);
@@ -1433,6 +1442,82 @@ bool IsConquestAlliance()
 {
     TracyZoneScoped;
     return conquest::IsAlliance();
+}
+
+/************************************************************************
+ *                                                                       *
+ * Campaign GM functions                                                 *
+ *                                                                       *
+ ************************************************************************/
+
+void CampaignTally()
+{
+    TracyZoneScoped;
+    campaign::RequestTally();
+}
+
+void CampaignUpdate()
+{
+    TracyZoneScoped;
+    campaign::RequestUpdate();
+}
+
+void CampaignRefresh()
+{
+    TracyZoneScoped;
+    campaign::RequestRefresh();
+}
+
+void CampaignSetInfluence(uint8 zoneId, uint8 army, int16 amount)
+{
+    TracyZoneScoped;
+    campaign::RequestSetInfluence(zoneId, army, amount);
+}
+
+void CampaignSetFortification(uint8 zoneId, int16 amount)
+{
+    TracyZoneScoped;
+    campaign::RequestSetFortification(zoneId, amount);
+}
+
+void CampaignSetZoneControl(uint8 zoneId, uint8 nation)
+{
+    TracyZoneScoped;
+    campaign::RequestSetZoneControl(zoneId, nation);
+}
+
+void CampaignSetBattleStatus(uint8 zoneId, uint8 status)
+{
+    TracyZoneScoped;
+    campaign::RequestSetBattleStatus(zoneId, status);
+}
+
+sol::table GetCampaignStatus(sol::this_state s)
+{
+    TracyZoneScoped;
+
+    sol::state_view lua(s);
+    sol::table      result = lua.create_table();
+
+    CampaignState state = campaign::GetCampaignState();
+
+    int idx = 1;
+    for (const auto& region : state.regions)
+    {
+        sol::table entry = lua.create_table();
+        entry["zoneId"] = region.campaignId; // Use campaignId to look up zone
+        entry["nation"] = region.nationControl;
+        entry["fort"]   = region.currentFortifications;
+        entry["san"]    = region.influenceSandoria;
+        entry["bas"]    = region.influenceBastok;
+        entry["win"]    = region.influenceWindurst;
+        entry["bst"]    = region.influenceBeastman;
+        entry["battle"] = region.status;
+        result[idx]     = entry;
+        ++idx;
+    }
+
+    return result;
 }
 
 /************************************************************************

@@ -227,6 +227,14 @@ uint8 GetRegionInfluence(uint8 type); // Return influence graphics
 uint8 GetNationRank(uint8 nation);
 uint8 GetConquestBalance();
 bool  IsConquestAlliance();
+void  CampaignTally();
+void  CampaignUpdate();
+void  CampaignRefresh();
+void  CampaignSetInfluence(uint8 zoneId, uint8 army, int16 amount);
+void  CampaignSetFortification(uint8 zoneId, int16 amount);
+void  CampaignSetZoneControl(uint8 zoneId, uint8 nation);
+void  CampaignSetBattleStatus(uint8 zoneId, uint8 status);
+sol::table GetCampaignStatus(sol::this_state s);
 void  SetRegionalConquestOverseers(uint8 regionID); // Update NPC Conquest Guard
 void  SendLuaFuncStringToZone(uint16 requestingZoneId, uint16 executorZoneId, const std::string& str);
 

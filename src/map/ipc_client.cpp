@@ -28,6 +28,7 @@
 
 #include "alliance.h"
 #include "aman.h"
+#include "campaign_system.h"
 #include "conquest_system.h"
 #include "linkshell.h"
 #include "map_networking.h"
@@ -801,6 +802,8 @@ void IPCClient::handleMessage_BesiegedEvent(const IPP& ipp, const ipc::BesiegedE
 void IPCClient::handleMessage_CampaignEvent(const IPP& ipp, const ipc::CampaignEvent& message)
 {
     TracyZoneScoped;
+
+    campaign::HandleMessage(message.type, message.payload);
 }
 
 void IPCClient::handleMessage_ColonizationEvent(const IPP& ipp, const ipc::ColonizationEvent& message)

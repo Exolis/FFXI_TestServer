@@ -31,6 +31,8 @@
 
 #include <httplib.h>
 
+class CampaignSystem;
+
 class HTTPServer
 {
 public:
@@ -39,10 +41,18 @@ public:
 
     void LockingUpdate();
 
+    // Wire in the CampaignSystem so the HTTP API can trigger a state refresh
+    // after external DB changes (e.g., from ServerManager).
+    void setCampaignSystem(CampaignSystem* campaignSystem)
+    {
+        campaignSystem_ = campaignSystem;
+    }
+
 private:
     Scheduler&                     scheduler_;
     httplib::Server                httpServer_;
     std::atomic<timer::time_point> lastUpdate_;
+    CampaignSystem*                campaignSystem_ = nullptr;
 
     struct APIDataCache
     {

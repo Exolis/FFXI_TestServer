@@ -37,10 +37,10 @@ void GP_CLI_COMMAND_REQCONQUEST::process(MapSession* PSession, CCharEntity* PCha
 {
     PChar->pushPacket<GP_SERV_COMMAND_CONQUEST>(PChar);
 
-    // TODO: This does not work reliably with multiple process.
-    // World server needs to stream updates to all map servers.
-    // CampaignState state = campaign::GetCampaignState();
-    // PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, state, 0);
-    // PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, state, 1);
+    // Send campaign map data to the client
+    CampaignState state = campaign::GetCampaignState();
+    PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, state, 0);
+    PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, state, 1);
+
     PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::COLONIZATION>(PChar);
 }

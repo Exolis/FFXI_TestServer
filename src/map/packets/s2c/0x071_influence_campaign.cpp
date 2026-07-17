@@ -70,7 +70,9 @@ GP_SERV_COMMAND_INFLUENCE::CAMPAIGN::CAMPAIGN(CCharEntity* PChar, const Campaign
         const CampaignRegion region = state.regions[i];
         const int            idx    = i - start;
 
-        packet.Zones[idx].Owner                 = region.nationControl;
+        // Owner field is 3 bits. DB stores mask values (2=Sandy, 4=Bastok, 6=Windy, 8=Beast).
+        // Packet expects Owner as mask/2 (1=Sandy, 2=Bastok, 3=Windy, 4=Beast).
+        packet.Zones[idx].Owner                 = region.nationControl / 2;
         packet.Zones[idx].CurrentFortifications = region.currentFortifications;
         packet.Zones[idx].CurrentResources      = region.currentResources;
         packet.Zones[idx].Heroism               = region.heroism;

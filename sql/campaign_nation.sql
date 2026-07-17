@@ -21,12 +21,12 @@ CREATE TABLE `campaign_nation` (
 -- Dumping data for table `campaign_nation`
 --
 
-INSERT INTO `campaign_nation` VALUES (0,0,0,0); -- Sandoria
-INSERT INTO `campaign_nation` VALUES (1,0,0,0); -- Bastok
-INSERT INTO `campaign_nation` VALUES (2,0,0,0); -- Windurst
-INSERT INTO `campaign_nation` VALUES (3,0,0,0); -- Orcish
-INSERT INTO `campaign_nation` VALUES (4,0,0,0); -- Quadav
-INSERT INTO `campaign_nation` VALUES (5,0,0,0); -- Yagudio
-INSERT INTO `campaign_nation` VALUES (6,0,0,0); -- Kindred
+INSERT INTO `campaign_nation` VALUES (0,0,50,50); -- Sandoria
+INSERT INTO `campaign_nation` VALUES (1,0,50,50); -- Bastok
+INSERT INTO `campaign_nation` VALUES (2,0,50,50); -- Windurst
+INSERT INTO `campaign_nation` VALUES (3,0,60,0); -- Orcish
+INSERT INTO `campaign_nation` VALUES (4,0,60,0); -- Quadav
+INSERT INTO `campaign_nation` VALUES (5,0,60,0); -- Yagudio
+INSERT INTO `campaign_nation` VALUES (6,0,60,0); -- Kindred
 
 -- Dump completed on 2018-06-09 17:04:32

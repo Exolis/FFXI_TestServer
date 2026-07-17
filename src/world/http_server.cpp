@@ -21,6 +21,7 @@
 
 #include "http_server.h"
 
+#include "campaign_system.h"
 #include "common/database.h"
 #include "common/logging.h"
 #include "common/settings.h"
@@ -162,6 +163,81 @@ HTTPServer::HTTPServer(Scheduler& scheduler)
                         });
 
                     res.set_content(j.dump(), "application/json");
+                });
+
+            httpServer_.Get(
+                "/api/campaign/map",
+                [&](const httplib::Request& req, httplib::Response& res)
+                {
+                    json j = json::array();
+                    auto rset = db::preparedStmt("SELECT * FROM campaign_map");
+                    if (rset && rset->rowsCount() > 0)
+                    {
+                        while (rset->next())
+                        {
+                            json obj;
+                            obj["id"]                    = rset->get<uint8>("id");
+                            obj["zoneid"]                = rset->get<uint16>("zoneid");
+                            obj["isbattle"]              = rset->get<uint8>("isbattle");
+                            obj["nation"]                = rset->get<uint8>("nation");
+                            obj["heroism"]               = rset->get<uint8>("heroism");
+                            obj["influence_sandoria"]    = rset->get<uint8>("influence_sandoria");
+                            obj["influence_bastok"]      = rset->get<uint8>("influence_bastok");
+                            obj["influence_windurst"]    = rset->get<uint8>("influence_windurst");
+                            obj["influence_beastman"]    = rset->get<uint8>("influence_beastman");
+                            obj["current_fortifications"] = rset->get<uint16>("current_fortifications");
+                            obj["current_resources"]      = rset->get<uint16>("current_resources");
+                            obj["max_fortifications"]     = rset->get<uint16>("max_fortifications");
+                            obj["max_resources"]          = rset->get<uint16>("max_resources");
+                            j.push_back(obj);
+                        }
+                    }
+                    res.set_content(j.dump(), "application/json");
+                });
+
+            httpServer_.Get(
+                "/api/campaign/nation",
+                [&](const httplib::Request& req, httplib::Response& res)
+                {
+                    json j = json::array();
+                    auto rset = db::preparedStmt("SELECT * FROM campaign_nation");
+                    if (rset && rset->rowsCount() > 0)
+                    {
+                        while (rset->next())
+                        {
+                            json obj;
+                            obj["id"]              = rset->get<uint8>("id");
+                            obj["reconnaissance"]  = rset->get<uint8>("reconnaissance");
+                            obj["morale"]          = rset->get<uint16>("morale");
+                            obj["prosperity"]      = rset->get<uint8>("prosperity");
+                            j.push_back(obj);
+                        }
+                    }
+                    res.set_content(j.dump(), "application/json");
+                });
+
+            // Trigger a campaign state refresh: reload from DB and broadcast
+            // to all map servers. Used by external tools (e.g., ServerManager)
+            // after directly editing the campaign_map / campaign_nation tables.
+            httpServer_.Post(
+                "/api/campaign/refresh",
+                [&](const httplib::Request& req, httplib::Response& res)
+                {
+                    if (!campaignSystem_)
+                    {
+                        res.status = 503;
+                        res.set_content(R"({"error":"CampaignSystem not available"})", "application/json");
+                        return;
+                    }
+
+                    ShowInfo("HTTP: /api/campaign/refresh requested — reloading campaign state from DB and broadcasting to map servers.");
+                    scheduler_.postToWorkerThread(
+                        [this]()
+                        {
+                            campaignSystem_->broadcastState();
+                        });
+
+                    res.set_content(R"({"status":"refresh queued"})", "application/json");
                 });
 
             httpServer_.set_error_handler(

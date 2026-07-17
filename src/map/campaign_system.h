@@ -24,6 +24,8 @@
 
 #include "campaign_handler.h"
 #include "common/cbasetypes.h"
+#include "common/regional_event.h"
+#include <span>
 #include <vector>
 
 class CCharEntity;
@@ -35,20 +37,29 @@ namespace campaign
 void LoadNations();
 void LoadState(); // Loads nation and region status as well as allied notes for character.
 
+void HandleMessage(CampaignMessage type, const std::span<const uint8> data); // Handle messages from world server.
+
 void SetReconnaissance(CampaignArmy army, int8 amount); // Change the reconnaissance level for the army by the amount.
 void SetMorale(CampaignArmy army, int8 amount);         // Change the morale level for the army by the amount.
 void SetProsperity(CampaignArmy army, int8 amount);     // Change the prosperity level for the army by the amount.
 void SetAlliedNotes(CCharEntity* chr, int32 amount);    // Each week, certain aspects of the campaign are set back to defaults.
 
 CampaignState GetCampaignState();
-uint8         GetReconnaissance(CampaignArmy army); // Change the reconnaissance level for the army by the amount.
-uint8         GetMorale(CampaignArmy army);         // Change the morale level for the army by the amount.
-uint8         GetProsperity(CampaignArmy army);     // Change the prosperity level for the army by the amount.
-int32         GetAlliedNotes(CCharEntity* chr);     // Change the prosperity level for the army by the amount.
+uint8         GetReconnaissance(CampaignArmy army);
+uint8         GetMorale(CampaignArmy army);
+uint8         GetProsperity(CampaignArmy army);
+int32         GetAlliedNotes(CCharEntity* chr);
 
 void SendUpdate(CCharEntity* PChar);
 
-// CampaignState state;
+// GM-triggered actions (send to world server)
+void RequestTally();                                            // GM triggers ownership resolution
+void RequestUpdate();                                           // GM triggers simulation tick (influence/fort/resource)
+void RequestRefresh();                                          // GM triggers state broadcast only
+void RequestSetInfluence(uint8 zoneId, uint8 army, int16 amt); // GM sets influence
+void RequestSetFortification(uint8 zoneId, int16 amount);      // GM sets fortification
+void RequestSetZoneControl(uint8 zoneId, uint8 nation);        // GM sets zone control
+void RequestSetBattleStatus(uint8 zoneId, uint8 status);       // GM sets battle status
 
 }; // namespace campaign
 #endif

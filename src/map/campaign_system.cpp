@@ -23,6 +23,8 @@
 
 #include "campaign_system.h"
 #include "common/database.h"
+#include "common/ipc.h"
+#include "ipc_client.h"
 #include "map/utils/zoneutils.h"
 #include "packets/s2c/0x071_influence_campaign.h"
 #include "utils/charutils.h"
@@ -67,7 +69,7 @@ void LoadState()
         {
             if (PZone->m_CampaignHandler != nullptr)
             {
-                uint8 nation = (uint8)(PZone->m_CampaignHandler->GetZoneControl() + 1) * 2;
+                uint8 nation = PZone->m_CampaignHandler->GetZoneControl();
                 switch (nation)
                 {
                     case CampaignControl::SandoriaMask:
@@ -195,6 +197,119 @@ void SendUpdate(CCharEntity* PChar)
 {
     PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, CState, 0);
     PChar->pushPacket<GP_SERV_COMMAND_INFLUENCE::CAMPAIGN>(PChar, CState, 1);
+}
+
+void HandleMessage(CampaignMessage type, const std::span<const uint8> data)
+{
+    switch (type)
+    {
+        case Campaign_W2M_BroadcastState:
+        case Campaign_W2M_TallyComplete:
+        {
+            if (const auto object = ipc::fromBytes<CampaignFullState>(data))
+            {
+                // Reload local state from DB (world server has already updated it)
+                LoadState();
+                LoadNations();
+
+                // Update all zone handlers with fresh data
+                zoneutils::ForEachZone([](CZone* PZone)
+                {
+                    if (PZone->m_CampaignHandler != nullptr && PZone->m_CampaignHandler->m_PZone != nullptr)
+                    {
+                        PZone->m_CampaignHandler->LoadCampaignZone(PZone);
+                    }
+                });
+
+                // Reload aggregated state
+                LoadState();
+
+                // Push updated packets to all online players in campaign zones
+                zoneutils::ForEachZone([](CZone* PZone)
+                {
+                    if (PZone->m_CampaignHandler != nullptr && PZone->m_CampaignHandler->m_PZone != nullptr)
+                    {
+                        PZone->ForEachChar([](CCharEntity* PChar)
+                        {
+                            SendUpdate(PChar);
+                        });
+                    }
+                });
+            }
+        }
+        break;
+        default:
+        {
+            ShowWarningFmt("campaign::HandleMessage: unhandled message type: {}", static_cast<uint8>(type));
+        }
+        break;
+    }
+}
+
+void RequestTally()
+{
+    message::send(ipc::CampaignEvent{
+        .type = CampaignMessage::Campaign_M2W_GM_Tally,
+    });
+}
+
+void RequestUpdate()
+{
+    message::send(ipc::CampaignEvent{
+        .type = CampaignMessage::Campaign_M2W_GM_Update,
+    });
+}
+
+void RequestRefresh()
+{
+    message::send(ipc::CampaignEvent{
+        .type = CampaignMessage::Campaign_M2W_GM_Refresh,
+    });
+}
+
+void RequestSetInfluence(uint8 zoneId, uint8 army, int16 amt)
+{
+    message::send(ipc::CampaignEvent{
+        .type    = CampaignMessage::Campaign_M2W_AddInfluence,
+        .payload = ipc::toBytes(CampaignAddInfluence{
+            .zoneId = zoneId,
+            .army   = army,
+            .amount = amt,
+        }),
+    });
+}
+
+void RequestSetFortification(uint8 zoneId, int16 amount)
+{
+    message::send(ipc::CampaignEvent{
+        .type    = CampaignMessage::Campaign_M2W_SetFortification,
+        .payload = ipc::toBytes(CampaignSetFortification{
+            .zoneId = zoneId,
+            .amount = amount,
+        }),
+    });
+}
+
+void RequestSetZoneControl(uint8 zoneId, uint8 nation)
+{
+    message::send(ipc::CampaignEvent{
+        .type    = CampaignMessage::Campaign_M2W_SetZoneControl,
+        .payload = ipc::toBytes(CampaignSetZoneControl{
+            .zoneId = zoneId,
+            .nation = nation,
+        }),
+    });
+}
+
+void RequestSetBattleStatus(uint8 zoneId, uint8 status)
+{
+    message::send(ipc::CampaignEvent{
+        .type    = CampaignMessage::Campaign_M2W_SetBattleStatus,
+        .payload = ipc::toBytes(CampaignSetBattleStatus{
+            .zoneId = zoneId,
+            .status = status,
+        }),
+    });
 }
 
 }; // namespace campaign

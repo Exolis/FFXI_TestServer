@@ -30,31 +30,31 @@ CREATE TABLE `campaign_map` (
 -- Dumping data for table `campaign_map`
 --
 
-INSERT INTO `campaign_map` VALUES (0,80,0,2,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (1,81,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (2,82,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (3,83,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (4,84,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (5,85,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (6,175,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (7,87,0,4,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (8,88,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (9,89,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (10,90,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (11,91,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (12,92,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (13,171,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (14,94,0,6,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (15,95,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (16,96,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (17,97,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (18,98,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (19,99,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (20,164,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (21,136,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (22,137,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (23,138,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (24,155,0,8,0,0,0,0,0,0,0,0,0);
-INSERT INTO `campaign_map` VALUES (25,156,0,8,0,0,0,0,0,0,0,0,0);
+INSERT INTO `campaign_map` VALUES (0,80,0,2,0,100,0,0,0,500,500,500,500);
+INSERT INTO `campaign_map` VALUES (1,81,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (2,82,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (3,83,0,8,0,0,0,0,50,0,0,200,200);
+INSERT INTO `campaign_map` VALUES (4,84,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (5,85,0,8,0,0,0,0,100,0,0,500,500);
+INSERT INTO `campaign_map` VALUES (6,175,0,8,0,0,0,0,50,0,0,200,200);
+INSERT INTO `campaign_map` VALUES (7,87,0,4,0,0,100,0,0,500,500,500,500);
+INSERT INTO `campaign_map` VALUES (8,88,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (9,89,0,8,0,0,0,0,50,0,0,200,200);
+INSERT INTO `campaign_map` VALUES (10,90,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (11,91,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (12,92,0,8,0,0,0,0,100,0,0,500,500);
+INSERT INTO `campaign_map` VALUES (13,171,0,8,0,0,0,0,50,0,0,200,200);
+INSERT INTO `campaign_map` VALUES (14,94,0,6,0,0,0,100,0,500,500,500,500);
+INSERT INTO `campaign_map` VALUES (15,95,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (16,96,0,8,0,0,0,0,50,0,0,200,200);
+INSERT INTO `campaign_map` VALUES (17,97,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (18,98,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (19,99,0,8,0,0,0,0,100,0,0,500,500);
+INSERT INTO `campaign_map` VALUES (20,164,0,8,0,0,0,0,50,0,0,200,200);
+INSERT INTO `campaign_map` VALUES (21,136,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (22,137,0,8,0,0,0,0,50,0,0,300,300);
+INSERT INTO `campaign_map` VALUES (23,138,0,8,0,0,0,0,75,0,0,400,400);
+INSERT INTO `campaign_map` VALUES (24,155,0,8,0,0,0,0,75,0,0,400,400);
+INSERT INTO `campaign_map` VALUES (25,156,0,8,0,0,0,0,100,0,0,500,500);
 
 -- Dump completed on 2018-06-09 16:59:58
