@@ -13,6 +13,7 @@ end
 
 zoneObject.onGameHour = function(zone)
     xi.darkixion.zoneOnGameHour(zone)
+    xi.campaignBattle.onGameHour(zone)
 end
 
 zoneObject.onZoneIn = function(player, prevZone)

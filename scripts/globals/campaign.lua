@@ -245,7 +245,7 @@ local function getSigilRank(player)
     end
 
     return 0
-end
+}
 
 local function getSigilMenuOptions(player)
     -- Bit Values:
@@ -260,7 +260,9 @@ local function getSigilMenuOptions(player)
         optionMask = utils.mask.setBit(optionMask, 1, true)
     end
 
-    -- TODO: Hangle Campaign Medal Active/Expired when implemented
+    if xi.campaign.getMedalRank(player) == 0 then
+        optionMask = utils.mask.setBit(optionMask, 0, true) -- Set bit 0 for Medal Expired
+    end
 
     return optionMask
 end
@@ -284,15 +286,14 @@ end
 xi.campaign.sigilOnTrigger = function(player, npc)
     local baseEvent     = sigilNpcInfo[player:getZoneID()][1]
     local freelanceMask = 0
+    freelanceMask = utils.mask.setBit(freelanceMask, 0, true) -- Set bit 0 for Reduced XP Loss
 
-    -- TODO: Update freelanceMask on implementation.  Bit 0 is required
-    -- to be true to allow for Reduced XP Loss
     if xi.campaign.getMedalRank(player) == 0 then
         player:startEvent(baseEvent + 1)
     else
         player:startEvent(baseEvent,
             player:getCampaignAllegiance(),
-            player:getCurrency('allied_notes'),
+            player:getCurrency("allied_notes"),
             freelanceMask,
             getSigilMenuOptions(player),
             getSigilRank(player),
@@ -369,7 +370,7 @@ xi.campaign.sigilOnEventFinish = function(player, csid, option, npc)
             player:messageSpecial(zones[zoneId].text.ALLIED_SIGIL)
 
             if bonusCost > 0 then
-                player:delCurrency('allied_notes', bonusCost)
+                player:delCurrency("allied_notes", bonusCost)
             end
 
         elseif optionType == 2 then
@@ -385,12 +386,12 @@ xi.campaign.sigilOnEventFinish = function(player, csid, option, npc)
                 itemPrice = itemPrice * 1.5
             end
 
-            if player:getCurrency('allied_notes') < itemPrice then
+            if player:getCurrency("allied_notes") < itemPrice then
                 return
             end
 
             if npcUtil.giveItem(player, itemInfo[1]) then
-                player:delCurrency('allied_notes', itemPrice)
+                player:delCurrency("allied_notes", itemPrice)
             end
         end
     end

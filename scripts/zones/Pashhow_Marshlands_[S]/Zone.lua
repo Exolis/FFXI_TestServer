@@ -9,6 +9,10 @@ zoneObject.onInitialize = function(zone)
     xi.voidwalker.zoneOnInit(zone)
 end
 
+zoneObject.onGameHour = function(zone)
+    xi.campaignBattle.onGameHour(zone)
+end
+
 zoneObject.onZoneIn = function(player, prevZone)
     local cs = -1
 

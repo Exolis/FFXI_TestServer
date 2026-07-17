@@ -39,6 +39,8 @@ zoneObject.onGameHour = function(zone)
             npc:setStatus(xi.status.NORMAL)
         end
     end
+
+    xi.campaignBattle.onGameHour(zone)
 end
 
 zoneObject.onEventUpdate = function(player, csid, option, npc)

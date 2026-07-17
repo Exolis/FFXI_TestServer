@@ -45,6 +45,14 @@ WorldEngine::WorldEngine(Scheduler& scheduler, EnableHTTPServer enableHTTPServer
 , colonizationSystem_(std::make_unique<ColonizationSystem>(*this))
 , httpServer_(enableHTTPServer ? std::make_unique<HTTPServer>(scheduler_) : nullptr)
 {
+    // Wire the campaign system into the HTTP server so external tools
+    // (e.g., ServerManager) can trigger a state refresh after editing the
+    // campaign_map / campaign_nation tables directly.
+    if (httpServer_)
+    {
+        httpServer_->setCampaignSystem(campaignSystem_.get());
+    }
+
     timeServerToken_ = scheduler_.intervalOnMainThread(
         kTimeServerTickInterval,
         [this]() -> Task<void>

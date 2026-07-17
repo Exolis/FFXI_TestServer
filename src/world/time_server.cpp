@@ -25,6 +25,7 @@
 #include "common/tracy.h"
 #include "common/vana_time.h"
 
+#include "campaign_system.h"
 #include "conquest_system.h"
 #include "daily_tally.h"
 #include "world_engine.h"
@@ -62,6 +63,7 @@ auto time_server(const WorldEngine* worldServer) -> Task<void>
                 // Weekly tick (Monday JST)
                 ShowDebugFmt("Weekly tick... (current tick: {})", tickNum);
                 worldServer->conquestSystem_->updateWeekConquest();
+                worldServer->campaignSystem_->runTally();
             }
             else
             {
@@ -69,6 +71,9 @@ auto time_server(const WorldEngine* worldServer) -> Task<void>
                 worldServer->conquestSystem_->updateHourlyConquest();
             }
             dailytally::UpdateDailyTallyPoints();
+
+            // Campaign daily decay tick
+            worldServer->campaignSystem_->runUpdate();
         }
         else
         {
