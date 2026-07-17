@@ -173,7 +173,7 @@ mission.sections =
             {
                 [165] = function(player, csid, option, npc)
                     npcUtil.giveKeyItem(player, xi.ki.LAPIS_MONOCLE)
-                    mission:setVar(player, 'Rock', math.random(1, 6))
+                    mission:setVar(player, 'Rock', math.randomInt(1, 6))
                     player:setMissionStatus(mission.areaId, 3)
                 end,
             },
@@ -254,7 +254,7 @@ mission.sections =
 
         [xi.zone.INNER_HORUTOTO_RUINS] =
         {
-            ['_5ca'] = mission:progressEvent(46),
+            ['_5ca'] = mission:progressCutscene(46),
 
             onEventFinish =
             {

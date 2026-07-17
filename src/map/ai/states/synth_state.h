@@ -22,27 +22,30 @@
 #ifndef _CSYNTH_STATE_H
 #define _CSYNTH_STATE_H
 
-#include "entities/battleentity.h"
+#include "entities/battle_entity.h"
 #include "state.h"
 
 class CSynthState : public CState
 {
 public:
-    CSynthState(CCharEntity* PChar, SKILLTYPE skill);
+    CSynthState(CCharEntity* PChar, xi::SkillType skill);
 
     // state logic done per tick - returns whether to exit the state or not
     virtual bool Update(timer::time_point tick) override;
 
     virtual void Cleanup(timer::time_point tick) override;
+
     // whether the state can be changed by normal means
     virtual bool CanChangeState() override
     {
         return false;
     }
+
     virtual bool CanFollowPath() override
     {
         return false;
     }
+
     virtual bool CanInterrupt() override
     {
         return false;

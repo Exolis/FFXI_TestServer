@@ -347,6 +347,20 @@ xi.mod =
     LUMINIAN_KILLER                 = 237,
     LUMINION_KILLER                 = 238,
 
+    AUGMENT_KILLER_EFFECTS          = 1201, -- Augments "Killer" effects (Examples: Ferine Gausape +1 and +2, Kukumi Gausape...)
+
+    -- Circle modifiers for damage done.
+    ARCANA_DMG_MULTIPLIER           = 1202,
+    DEMON_DMG_MULTIPLIER            = 1203,
+    DRAGON_DMG_MULTIPLIER           = 1204,
+    UNDEAD_DMG_MULTIPLIER           = 1205,
+
+    -- Circle modifiers for damage recieved.
+    ARCANA_RES_MULTIPLIER           = 1206,
+    DEMON_RES_MULTIPLIER            = 1207,
+    DRAGON_RES_MULTIPLIER           = 1208,
+    UNDEAD_RES_MULTIPLIER           = 1209,
+
     -- Status effect Job trait resistance modifiers.
     SLEEPRES                        = 240,
     POISONRES                       = 241,
@@ -481,8 +495,9 @@ xi.mod =
     SPIKES                          = 342,
     ENSPELL_DMG                     = 343,
     ENSPELL_CHANCE                  = 856,
-    ENSPELL_DMG_BONUS               = 432, -- Adds to the base damage of the enspell before bonuses and reductions
+    ENSPELL_DMG_BONUS               = 432,  -- Adds to the base damage of the enspell before bonuses and reductions
     ENSPELL_DMG_PCT                 = 1195, -- Adds to the multiplier applied to enspell damage after base damage is calculated, before day and weather bonuses and reductions
+    ENSPELL_DURATION                = 938,  -- Adds a flat bonus to duration in seconds. Examples: Buzzard tuck, Brilliance.
     SPIKES_DMG                      = 344,
     TP_BONUS                        = 345,
     SPIKES_DMG_BONUS                = 1079, -- Increases Blaze/Ice/Shock spikes damage by percentage (e.g. mod value 50 = +50% spikes damage)
@@ -585,6 +600,8 @@ xi.mod =
 
     -- Puppetmaster
     AUTOMATON_LVL_BONUS             = 1044, -- Automaton: Lv. (Increases automaton's base level above 99)
+    TACTICAL_SWITCH_TP_BONUS        = 1199, -- TP bonus granted by Tactical Switch (percent)
+    OVERDRIVE_BONUS_DURATION        = 1200, -- Extra seconds added to Overdrive
 
     -- Blue Mage
     ENHANCES_BURST_AFFINITY         = 1139, -- Increases WSC bonus on spells cast with Burst Affinity (percent)
@@ -686,19 +703,20 @@ xi.mod =
     DARK_ARTS_EFFECT                = 335,
     LIGHT_ARTS_SKILL                = 336,
     DARK_ARTS_SKILL                 = 337,
-    LIGHT_ARTS_REGEN                = 338, -- Regen bonus HP from Light Arts and Tabula Rasa
+    LIGHT_ARTS_REGEN                = 338,  -- Regen bonus HP from Light Arts and Tabula Rasa
     REGEN_DURATION                  = 339,
     HELIX_EFFECT                    = 478,
     HELIX_DURATION                  = 477,
     STORMSURGE_EFFECT               = 400,
     SUBLIMATION_BONUS               = 401,
-    GRIMOIRE_SPELLCASTING           = 489, -- "Grimoire: Reduces spellcasting time" bonus
+    GRIMOIRE_SPELLCASTING           = 489,  -- "Grimoire: Reduces spellcasting time" bonus
     WYVERN_BREATH                   = 402,
-    UNCAPPED_WYVERN_BREATH          = 284, -- Uncapped wyvern breath boost. Used on retail for augments, normal gear should use WYVERN_BREATH.
-    REGEN_DOWN                      = 404, -- poison
-    REFRESH_DOWN                    = 405, -- plague, reduce mp
-    REGAIN_DOWN                     = 406, -- plague, reduce tp
-    MAGIC_DAMAGE                    = 311, --  Magic damage added directly to the spell's base damage
+    UNCAPPED_WYVERN_BREATH          = 284,  -- Uncapped wyvern breath boost. Used on retail for augments, normal gear should use WYVERN_BREATH.
+    REGEN_DOWN                      = 404,  -- poison
+    REFRESH_DOWN                    = 405,  -- plague, reduce mp
+    REGAIN_DOWN                     = 406,  -- plague, reduce tp
+    MAGIC_DAMAGE                    = 311,  --  Magic damage added directly to the spell's base damage
+    MP_COST_REDUCTION               = 1197, -- Reduces MP cost of all spells by percentage (e.g. mod value 10 = -10% MP cost)
 
     -- Gear set modifiers
     DA_DOUBLE_DMG_RATE              = 408,  -- Double attack's double damage chance %.
@@ -884,20 +902,20 @@ xi.mod =
     AUTO_MAB_COEFFICIENT            = 157, -- Applies a MAB multiplier to automatons. This value is the bonus %.
     AUTO_DECISION_DELAY             = 842, -- Reduces the Automaton's global decision delay
     AUTO_SHIELD_BASH_DELAY          = 843, -- Reduces the Automaton's global shield bash delay
-    AUTO_MAGIC_DELAY                = 844, -- Reduces the Automaton's global magic delay
+    AUTO_MAGIC_COOLDOWN             = 844, -- Adjusts the Automaton's global magic cooldown (negative value reduces cooldown, positive value increases cooldown)
     AUTO_HEALING_DELAY              = 845, -- Reduces the Automaton's global healing delay
     AUTO_HEALING_THRESHOLD          = 846, -- Increases the healing trigger threshold
     AUTO_SHIELD_BASH_SLOW           = 848, -- Adds a slow effect to Shield Bash
     AUTO_TP_EFFICIENCY              = 849, -- Causes the Automaton to wait to form a skillchain when its master is > 90% TP
     AUTO_SCAN_RESISTS               = 850, -- Causes the Automaton to scan a target's resistances
-    AUTO_STEAM_JACKET               = 938, -- Causes the Automaton to mitigate damage from successive attacks of the same type
-    AUTO_STEAM_JACKET_REDUCTION     = 939, -- Amount of damage reduced with Steam Jacket
+    AUTO_STEAM_JACKET_REDUCTION     = 939, -- Percent damage reduction from Steam Jacket
     AUTO_SCHURZEN                   = 940, -- Prevents fatal damage leaving the automaton at 1HP and consumes an Earth manuever
     AUTO_EQUALIZER                  = 941, -- Reduces damage received according to damage taken
     AUTO_PERFORMANCE_BOOST          = 942, -- Increases the performance of other attachments by a percentage
     AUTO_ANALYZER                   = 943, -- Causes the Automaton to mitigate damage from a special attack a number of times
     AUTO_RANGED_DELAY               = 1001, -- Decreases the amount of time between ranged attacks
     AUTO_RANGED_DAMAGEP             = 1002, -- Increases Automaton Ranged Weapon damage by a %
+    VOLT_GUN_POTENCY                = 1198, -- AE Potency Bonus for Volt Gun (percent)
 
     -- Mythic Weapon Mods
     AUGMENTS_ABSORB_LIBERATOR       = 521, -- Direct Absorb spell increase while Liberator is equipped (percentage based) (Augments "Absorb" spells)

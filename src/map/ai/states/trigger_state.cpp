@@ -21,10 +21,7 @@
 
 #include "trigger_state.h"
 
-#include "ai/ai_container.h"
-#include "entities/charentity.h"
-#include "entities/npcentity.h"
-#include "lua/luautils.h"
+#include "entities/char_entity.h"
 
 CTriggerState::CTriggerState(CBaseEntity* PEntity, uint16 targid, bool door)
 : CState(PEntity, targid)

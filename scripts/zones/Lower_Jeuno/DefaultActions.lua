@@ -1,4 +1,4 @@
-local ID = zones[xi.zone.LOWER_JEUNO]
+﻿local ID = zones[xi.zone.LOWER_JEUNO]
 
 return {
     ['_6t2']            = { event = 64 }, -- Door:Merchant's House
@@ -34,7 +34,6 @@ return {
     ['Navisse']         = { event = 153 },
     ['Odasel']          = { event = 162 },
     ['Omer']            = { event = 206 },
-    ['Parike-Poranke']  = { text = ID.text.PARIKE_PORANKE_DIALOG },
     ['Raji']            = { event = 195 },
     ['Rakuru-Rakoru']   = { event = 10078 },
     ['Ruslan']          = { event = 10008 },
@@ -46,7 +45,6 @@ return {
     ['Song_Runes']      = { messageSpecial = ID.text.SONG_RUNES_DEFAULT },
     ['Sutarara']        = { event = 208 },
     ['Tawfeeq']         = { event = 225 },
-    ['Taza']            = { text = ID.text.WAAG_DEEG_SHOP_DIALOG },
     ['Teigero-Bangero'] = { event = 34 },
     ['Tuh_Almodankha']  = { event = 10013 },
     ['Vhana_Ehgaklywha'] = { text = ID.text.VHANA_DEFAULT },

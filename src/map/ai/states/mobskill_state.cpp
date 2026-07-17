@@ -20,14 +20,16 @@
 */
 
 #include "mobskill_state.h"
+
 #include "action/action.h"
 #include "action/interrupts.h"
 #include "ai/ai_container.h"
 #include "ai/helpers/targetfind.h"
 #include "enmity_container.h"
-#include "entities/battleentity.h"
-#include "entities/mobentity.h"
+#include "entities/battle_entity.h"
+#include "entities/mob_entity.h"
 #include "enums/action/category.h"
+#include "enums/four_cc.h"
 #include "lua/luautils.h"
 #include "mobskill.h"
 #include "packets/s2c/0x028_battle2.h"
@@ -45,7 +47,7 @@ CMobSkillState::CMobSkillState(CBattleEntity* PEntity, uint16 targid, uint16 wsi
         throw CStateInitException(nullptr);
     }
 
-    if (m_PEntity->StatusEffectContainer->HasStatusEffect({ EFFECT_AMNESIA, EFFECT_IMPAIRMENT }))
+    if (m_PEntity->StatusEffectContainer->HasStatusEffect({ xi::StatusEffect::Amnesia, xi::StatusEffect::Impairment }))
     {
         throw CStateInitException(nullptr);
     }
@@ -93,17 +95,24 @@ CMobSkillState::CMobSkillState(CBattleEntity* PEntity, uint16 targid, uint16 wsi
             PActionTarget = m_PEntity;
         }
 
+        auto targetID = PActionTarget ? PActionTarget->id : m_PEntity->id;
+
+        if (m_PEntity->objtype != TYPE_PC && settings::get<bool>("map.HIDE_READIES_TARGET"))
+        {
+            targetID = m_PEntity->id;
+        }
+
         action_t action{
             .actorId    = m_PEntity->id,
             .actiontype = ActionCategory::SkillStart,
             .actionid   = static_cast<uint32_t>(FourCC::SkillUse),
             .targets    = {
                 {
-                       .actorId = PActionTarget ? PActionTarget->id : m_PEntity->id,
-                       .results = {
+                    .actorId = targetID,
+                    .results = {
                         {
-                               .param     = m_PSkill->getID(),
-                               .messageID = m_PSkill->getFlag() & SKILLFLAG_NO_START_MSG ? MsgBasic::None : MsgBasic::ReadiesWeaponskill,
+                            .param     = m_PSkill->getID(),
+                            .messageID = m_PSkill->getFlag() & SKILLFLAG_NO_START_MSG ? MsgBasic::None : MsgBasic::ReadiesWeaponskill,
                         },
                     },
                 },
@@ -135,17 +144,23 @@ void CMobSkillState::SpendCost()
 {
     if (!m_PSkill->isTpFreeSkill())
     {
-        if (m_PEntity->StatusEffectContainer->HasStatusEffect(EFFECT_SEKKANOKI))
+        if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Sekkanoki))
         {
             m_spentTP = m_PEntity->addTP(-1000);
-            m_PEntity->StatusEffectContainer->DelStatusEffect(EFFECT_SEKKANOKI);
+            m_PEntity->StatusEffectContainer->DelStatusEffect(xi::StatusEffect::Sekkanoki);
         }
-        else if (m_PEntity->StatusEffectContainer->HasStatusEffect(EFFECT_MEIKYO_SHISUI) &&
+        else if (m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::MeikyoShisui) &&
                  m_PEntity->GetLocalVar("[MeikyoShisui]MobSkillCount") > 0)
         {
-            auto currentCount = m_PEntity->GetLocalVar("[MeikyoShisui]MobSkillCount");
-            m_PEntity->SetLocalVar("[MeikyoShisui]MobSkillCount", currentCount - 1);
-            m_spentTP = m_PEntity->addTP(-1000);
+            auto currentCount = m_PEntity->GetLocalVar("[MeikyoShisui]MobSkillCount") - 1;
+            m_PEntity->SetLocalVar("[MeikyoShisui]MobSkillCount", currentCount);
+
+            m_spentTP = 3000; // Unknown how mobs behave like this
+
+            if (currentCount == 0)
+            {
+                m_PEntity->health.tp = 0;
+            }
         }
         else
         {
@@ -172,7 +187,7 @@ bool CMobSkillState::Update(timer::time_point tick)
     if (m_PEntity && m_PEntity->isAlive() && (tick >= GetEntryTime() + m_castTime && !IsCompleted()))
     {
         // Check for stun/sleep/hysteria/etc at the moment of skill completion - Cleanup handles the interrupt
-        if (m_PEntity->StatusEffectContainer->HasPreventActionEffect() || m_PEntity->StatusEffectContainer->HasStatusEffect(EFFECT_HYSTERIA))
+        if (m_PEntity->StatusEffectContainer->HasPreventActionEffect() || m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Hysteria))
         {
             return true;
         }
@@ -183,10 +198,11 @@ bool CMobSkillState::Update(timer::time_point tick)
         // Zero message ID
         if (m_PSkill->getFlag() & SKILLFLAG_NO_FINISH_MSG)
         {
-            action.ForEachResult([&](action_result_t& result)
-                                 {
-                                     result.messageID = MsgBasic::None;
-                                 });
+            action.ForEachResult(
+                [&](action_result_t& result)
+                {
+                    result.messageID = MsgBasic::None;
+                });
         }
 
         // Only send packet if action was populated (e.g. interrupts return early)
@@ -209,7 +225,7 @@ bool CMobSkillState::Update(timer::time_point tick)
     if (IsCompleted() && tick > m_finishTime)
     {
         auto* PTarget = GetTarget();
-        if (m_skillSuccess && PTarget && PTarget->objtype == TYPE_MOB && PTarget != m_PEntity && m_PEntity->allegiance == ALLEGIANCE_TYPE::PLAYER)
+        if (m_skillSuccess && PTarget && PTarget->objtype == TYPE_MOB && PTarget != m_PEntity && m_PEntity->allegiance == xi::Allegiance::Player)
         {
             bool withMaster = m_PEntity->objtype == TYPE_PET || (m_PEntity->objtype == TYPE_MOB && m_PEntity->isCharmed);
             static_cast<CMobEntity*>(PTarget)->PEnmityContainer->UpdateEnmity(m_PEntity, 0, 0, withMaster);
@@ -218,13 +234,13 @@ bool CMobSkillState::Update(timer::time_point tick)
         if (m_PEntity->objtype == TYPE_PET && m_PEntity->PMaster && m_PEntity->PMaster->objtype == TYPE_PC && (m_PSkill->isBloodPactRage() || m_PSkill->isBloodPactWard()))
         {
             CCharEntity* PSummoner = dynamic_cast<CCharEntity*>(m_PEntity->PMaster);
-            if (PSummoner && PSummoner->StatusEffectContainer->HasStatusEffect(EFFECT_AVATARS_FAVOR))
+            if (PSummoner && PSummoner->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::AvatarsFavor))
             {
-                auto power = PSummoner->StatusEffectContainer->GetStatusEffect(EFFECT_AVATARS_FAVOR)->GetPower();
+                auto power = PSummoner->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::AvatarsFavor)->GetPower();
                 // Retail: Power is gained for BP use
                 auto levelGained = m_PSkill->isBloodPactRage() ? 3 : 2;
                 power += levelGained;
-                PSummoner->StatusEffectContainer->GetStatusEffect(EFFECT_AVATARS_FAVOR)->SetPower(power > 11 ? power : 11);
+                PSummoner->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::AvatarsFavor)->SetPower(power > 11 ? power : 11);
             }
         }
 
@@ -276,7 +292,7 @@ void CMobSkillState::reduceTpOnInterrupt() const
         // charm -> build tp -> leave -> stun -> interrupt TP move with weapon bash -> charm and check TP. Note that weapon bash incurs damage and thus adds TP.
         // Note: this is very incomplete. Further testing shows that other statuses also reduce TP but in addition it seems that specific mobskills may reduce TP more or less than these numbers
         // Thus while incomplete, is better than nothing.
-        if (m_PEntity->StatusEffectContainer && m_PEntity->StatusEffectContainer->HasPreventActionEffect())
+        if (m_PEntity->StatusEffectContainer && m_PEntity->StatusEffectContainer->HasPreventActionEffect() && !m_PEntity->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::MeikyoShisui))
         {
             int16 tp = m_spentTP;
             if (tp >= 2900)

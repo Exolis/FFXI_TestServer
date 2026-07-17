@@ -44,7 +44,7 @@ enum MOBMODIFIER : int
     MOBMOD_SEVERE_SPELL_CHANCE    = 13, // % chance to use a severe spell like death or impact
     MOBMOD_SKILL_LIST             = 14, // uses given mob skill list
     MOBMOD_MUG_GIL                = 15, // amount gil carried for mugging
-    MOBMOD_DETECTION              = 16, // Overrides mob family's detection method. In order to set to override to none an unused bit must be set such as DETECT_NONE1.
+    MOBMOD_DETECTION              = 16, // Overrides mob family's detection method. In order to set to override to none an unused bit must be set such as xi::Detects::None1.
     MOBMOD_NO_DESPAWN             = 17, // do not despawn when too far from spawn. Gob Diggers have this.
     MOBMOD_VAR                    = 18, // temp var for whatever. Gets cleared on spawn
     MOBMOD_CAN_SHIELD_BLOCK       = 19, // toggle shield use for mobs without physical shields (trusts)
@@ -87,7 +87,7 @@ enum MOBMODIFIER : int
     MOBMOD_HP_STANDBACK           = 56, // mob will always standback with hp % higher to value
     MOBMOD_MAGIC_DELAY            = 57, // Amount of seconds mob waits before casting first spell
     MOBMOD_SPECIAL_DELAY          = 58, // Amount of seconds mob waits before using first special
-    MOBMOD_WEAPON_BONUS           = 59, // Add a flat modifer mob weapon damage ( damage + bonus )
+    MOBMOD_BASE_DAMAGE_MODIFIER   = 59, // Add a flat modifer mob a mob's base damage. This is subject to multiplication by MOBMOD_BASE_DAMAGE_MULTIPLIER.
     MOBMOD_SPAWN_ANIMATIONSUB     = 60, // reset animationsub to this on spawn
     MOBMOD_HP_SCALE               = 61, // Scale the mobs max HP. ( hp_scale / 100 ) * maxhp
     MOBMOD_NO_STANDBACK           = 62, // Mob will never standback
@@ -111,10 +111,10 @@ enum MOBMODIFIER : int
     MOBMOD_SKIP_ALLEGIANCE_CHECK  = 80, // Skip the allegiance check for valid target (allows for example a mob to cast a TARGET_ENEMY spell on itself)
     MOBMOD_ABILITY_RESPONSE       = 81, // Mob can respond to player ability use with onPlayerAbilityUse()
     MOBMOD_RUN_SPEED_MULT         = 82, // Multiplier for the speed of a mob while running (generally when the target is out of range) 100 = 1.00x
-    MOBMOD_CLAIM_TYPE             = 83, // Changes the claim behavior of the mob. See ClaimType enum.
+    MOBMOD_CLAIM_TYPE             = 83, // Changes the claim behavior of the mob. See xi::ClaimType enum.
     MOBMOD_NO_SPELL_COST          = 84, // Mob does not use MP when casting spells
     MOBMOD_ASTRAL_PET_OFFSET      = 85, // If non-zero, defines the offset from main mob's ID for astral flow (if zero, will assume offset of 2)
-    MOBMOD_BASE_DAMAGE_MULTIPLIER = 86, // Multiplies the mob's base damage. Example: 150 = x1.5
+    MOBMOD_BASE_DAMAGE_MULTIPLIER = 86, // Multiplies the mob's base damage. Example: 150 = x1.5. MOBMOD_DAMAGE_OFFSET/MOBMOD_RANGED_DAMAGE_OFFSET are not subject to multiplication.
     MOBMOD_DAMAGE_OFFSET          = 87, // Adds or subtracts the mob's base damage offset.
     MOBMOD_RANGED_DAMAGE_OFFSET   = 88, // Adds or subtracts the mob's ranged base damage offset.
     MOBMOD_AVATAR_PETID           = 89, // A value from xi.petId to select model/ability from when owner uses astral flow
@@ -125,6 +125,7 @@ enum MOBMODIFIER : int
     MOBMOD_FOLLOW_LEASH_RANGE     = 94, // Distance the leader can walk before their followers start moving. Applied to followers.
     MOBMOD_FOLLOW_STOP_RANGE      = 95, // Distance the followers attempt to stop at once their leader stops moving. Applied to followers.
     MOBMOD_TRUST_SHIELD_SIZE      = 96, // TRUSTS ONLY: Set the size of the mob's shield. 3 = Default size, only used for trusts that use shields.
+    MOBMOD_BODYGUARD              = 97, // Charmed mob defends its master similar to an avatar. (Maiden's Virelai)
 };
 
 #endif

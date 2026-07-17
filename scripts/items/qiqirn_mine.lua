@@ -6,7 +6,7 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     local result = 0
     if target:getZoneID() ~= xi.zone.LEBROS_CAVERN then
         result = 55
@@ -43,7 +43,7 @@ itemObject.onItemUse = function(target)
         bomb:setSpawn(303, -30, 341, 167)
         bomb:spawn()
     else
-        bomb:setSpawn(xPos + math.random(-2, 2), target:getYPos() , zPos + math.random(-2, 2))
+        bomb:setSpawn(xPos + math.randomInt(-2, 2), target:getYPos() , zPos + math.randomInt(-2, 2))
         bomb:spawn()
     end
 

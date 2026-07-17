@@ -40,7 +40,7 @@ CLuaStatusEffect::CLuaStatusEffect(CStatusEffect* StatusEffect)
 
 uint32 CLuaStatusEffect::getEffectType()
 {
-    return m_PLuaStatusEffect->GetStatusID();
+    return static_cast<uint32>(m_PLuaStatusEffect->GetStatusID());
 }
 
 //======================================================//
@@ -65,6 +65,11 @@ uint16 CLuaStatusEffect::getSubPower()
 uint16 CLuaStatusEffect::getTier()
 {
     return m_PLuaStatusEffect->GetTier();
+}
+
+uint8 CLuaStatusEffect::getEffectSlot()
+{
+    return m_PLuaStatusEffect->GetEffectSlot();
 }
 
 //======================================================//
@@ -159,9 +164,28 @@ void CLuaStatusEffect::setSubPower(uint16 subpower)
     m_PLuaStatusEffect->SetSubPower(subpower);
 }
 
+/************************************************************************
+ *                                                                      *
+ * Sets the icon used by the sub effect of auras etc                    *
+ * Will default to the main icon if not set                             *
+ *                                                                      *
+ ************************************************************************/
+
+void CLuaStatusEffect::setSubIcon(uint16 subIcon)
+{
+    m_PLuaStatusEffect->SetSubIcon(subIcon);
+}
+
+//======================================================//
+
 void CLuaStatusEffect::setTier(uint16 tier)
 {
     m_PLuaStatusEffect->SetTier(tier);
+}
+
+void CLuaStatusEffect::setEffectSlot(uint8 slot)
+{
+    m_PLuaStatusEffect->SetEffectSlot(slot);
 }
 
 auto CLuaStatusEffect::setOriginID(uint32 originid) -> void
@@ -208,32 +232,37 @@ void CLuaStatusEffect::addMod(uint16 mod, int16 amount)
 
 uint32 CLuaStatusEffect::getEffectFlags()
 {
-    return m_PLuaStatusEffect->GetEffectFlags();
+    return static_cast<uint32>(m_PLuaStatusEffect->GetEffectFlags());
 }
 
 void CLuaStatusEffect::setEffectFlags(uint32 flags)
 {
-    m_PLuaStatusEffect->SetEffectFlags(flags);
+    m_PLuaStatusEffect->SetEffectFlags(static_cast<xi::StatusEffectFlag>(flags));
 }
 
 void CLuaStatusEffect::addEffectFlag(uint32 flag)
 {
-    m_PLuaStatusEffect->AddEffectFlag(flag);
+    m_PLuaStatusEffect->AddEffectFlag(static_cast<xi::StatusEffectFlag>(flag));
 }
 
 void CLuaStatusEffect::delEffectFlag(uint32 flag)
 {
-    m_PLuaStatusEffect->DelEffectFlag(flag);
+    m_PLuaStatusEffect->DelEffectFlag(static_cast<xi::StatusEffectFlag>(flag));
 }
 
 bool CLuaStatusEffect::hasEffectFlag(uint32 flag)
 {
-    return m_PLuaStatusEffect->HasEffectFlag(flag);
+    return m_PLuaStatusEffect->HasEffectFlag(static_cast<xi::StatusEffectFlag>(flag));
 }
 
 uint16 CLuaStatusEffect::getIcon()
 {
     return m_PLuaStatusEffect->GetIcon();
+}
+
+uint16 CLuaStatusEffect::getSubIcon()
+{
+    return m_PLuaStatusEffect->GetSubIcon();
 }
 
 uint16 CLuaStatusEffect::getSourceType()
@@ -276,8 +305,11 @@ void CLuaStatusEffect::Register()
     SOL_REGISTER("addMod", CLuaStatusEffect::addMod);
     SOL_REGISTER("getSubPower", CLuaStatusEffect::getSubPower);
     SOL_REGISTER("setSubPower", CLuaStatusEffect::setSubPower);
+    SOL_REGISTER("setSubIcon", CLuaStatusEffect::setSubIcon);
     SOL_REGISTER("getTier", CLuaStatusEffect::getTier);
     SOL_REGISTER("setTier", CLuaStatusEffect::setTier);
+    SOL_REGISTER("getEffectSlot", CLuaStatusEffect::getEffectSlot);
+    SOL_REGISTER("setEffectSlot", CLuaStatusEffect::setEffectSlot);
     SOL_REGISTER("getTick", CLuaStatusEffect::getTick);
     SOL_REGISTER("setTick", CLuaStatusEffect::setTick);
     SOL_REGISTER("setStartTime", CLuaStatusEffect::setStartTime);
@@ -287,11 +319,12 @@ void CLuaStatusEffect::Register()
     SOL_REGISTER("delEffectFlag", CLuaStatusEffect::delEffectFlag);
     SOL_REGISTER("hasEffectFlag", CLuaStatusEffect::hasEffectFlag);
     SOL_REGISTER("getIcon", CLuaStatusEffect::getIcon);
+    SOL_REGISTER("getSubIcon", CLuaStatusEffect::getSubIcon);
 }
 
 std::ostream& operator<<(std::ostream& os, const CLuaStatusEffect& effect)
 {
-    std::string id = effect.GetStatusEffect() ? std::to_string(effect.GetStatusEffect()->GetStatusID()) : "nullptr";
+    std::string id = effect.GetStatusEffect() ? std::to_string(static_cast<uint16>(effect.GetStatusEffect()->GetStatusID())) : "nullptr";
     return os << "CLuaStatusEffect(" << id << ")";
 }
 

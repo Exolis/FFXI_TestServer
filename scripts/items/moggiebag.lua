@@ -6,12 +6,12 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     return xi.itemUtils.itemBoxOnItemCheck(target)
 end
 
 itemObject.onItemUse = function(target)
-    local amount = math.random(100, 10000)
+    local amount = math.randomInt(100, 10000)
     npcUtil.giveCurrency(target, 'gil', amount)
 end
 

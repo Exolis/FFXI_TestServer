@@ -20,7 +20,6 @@
 */
 
 #include "attackround.h"
-#include "ai/ai_container.h"
 #include "items/item_weapon.h"
 #include "mob_modifier.h"
 #include "packets/s2c/0x01d_item_same.h"
@@ -94,7 +93,7 @@ CAttackRound::CAttackRound(CBattleEntity* attacker, CBattleEntity* defender)
     m_attackSwings[0].SetAsFirstSwing();
 
     // Delete the haste samba effect.
-    attacker->StatusEffectContainer->DelStatusEffect(EFFECT_HASTE_SAMBA_HASTE);
+    attacker->StatusEffectContainer->DelStatusEffect(xi::StatusEffect::HasteSambaHaste);
 }
 
 /************************************************************************
@@ -183,7 +182,7 @@ bool CAttackRound::IsH2H()
 {
     if (auto* weapon = dynamic_cast<CItemWeapon*>(m_attacker->m_Weapons[SLOT_MAIN]))
     {
-        return weapon->getSkillType() == SKILL_HAND_TO_HAND;
+        return weapon->getSkillType() == xi::SkillType::HandToHand;
     }
     return false;
 }
@@ -316,10 +315,10 @@ void CAttackRound::CreateAttacks(CItemWeapon* PWeapon, PHYSICAL_ATTACK_DIRECTION
 
     // Preference matters! The following are additional hits to the default hit that don't stack up
     // Mikage > Quad > Triple > Double > Mythic Aftermath > Occasionally Attacks > Hasso + Zanshin
-    // Daken is handled separately in CreateDakenAttack() and Zanshin in src/map/entities/battleentity.cpp#L1768
+    // Daken is handled separately in CreateDakenAttack() and Zanshin in src/map/entities/battle_entity.cpp#L1768
 
     // Checking Mikage Effect - Hits Vary With Num of Utsusemi Shadows for Main Weapon
-    if (m_attacker->StatusEffectContainer->HasStatusEffect(EFFECT_MIKAGE) && m_attacker->m_Weapons[SLOT_MAIN] && m_attacker->m_Weapons[SLOT_MAIN]->getID() == PWeapon->getID())
+    if (m_attacker->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Mikage) && m_attacker->m_Weapons[SLOT_MAIN] && m_attacker->m_Weapons[SLOT_MAIN]->getID() == PWeapon->getID())
     {
         auto shadows = (uint8)m_attacker->getMod(Mod::UTSUSEMI);
         AddAttackSwing(PHYSICAL_ATTACK_TYPE::NORMAL, direction, shadows);

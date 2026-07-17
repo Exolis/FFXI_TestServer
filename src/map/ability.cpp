@@ -21,7 +21,6 @@
 
 #include "ability.h"
 
-#include "common/database.h"
 #include "enums/recast.h"
 
 #include "lua/luautils.h"
@@ -87,7 +86,7 @@ void CAbility::setActionType(const ActionCategory type)
     m_actionType = type;
 }
 
-void CAbility::setPostActionEffectCleanup(EFFECT effectToCleanup)
+void CAbility::setPostActionEffectCleanup(xi::StatusEffect effectToCleanup)
 {
     m_cleanupEffect = effectToCleanup;
 }
@@ -187,7 +186,7 @@ auto CAbility::getActionType() const -> ActionCategory
     return m_actionType;
 }
 
-EFFECT CAbility::getPostActionEffectCleanup()
+auto CAbility::getPostActionEffectCleanup() -> xi::StatusEffect
 {
     return m_cleanupEffect;
 }
@@ -360,7 +359,7 @@ void LoadAbilitiesList()
             {
                 filename = fmt::format("./scripts/actions/abilities/pets/{}.lua", PAbility->getName());
             }
-            luautils::CacheLuaObjectFromFile(filename);
+            luautils::LoadLuaObjectFromFile(filename);
         }
     }
 

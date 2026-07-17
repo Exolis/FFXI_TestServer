@@ -29,7 +29,6 @@
 #include <vector>
 
 class CCharEntity;
-class CZoneCampaign;
 
 namespace campaign
 {

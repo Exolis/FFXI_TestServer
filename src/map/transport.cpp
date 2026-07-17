@@ -21,14 +21,8 @@
 
 #include "transport.h"
 
-#include "common/timer.h"
 #include "common/vana_time.h"
-#include "map_engine.h"
 
-#include <cstdlib>
-
-#include "entities/charentity.h"
-#include "packets/entity_update.h"
 #include "utils/zoneutils.h"
 #include "zone.h"
 
@@ -36,14 +30,14 @@ void Transport_Ship::setVisible(bool visible) const
 {
     if (visible)
     {
-        this->npc->status = STATUS_TYPE::NORMAL;
+        this->npc->status = xi::Status::Normal;
         // This appears to be some sort of magic bit/flag set. In QSC 0x8001 is observed on the effects that light up the weight on the weighted doors.
         // The effect of 0x8001 appears to be to "stay in place" and not "stand on top of" things, such as the floor -- most likely fixes positions to the exact X/Y/Z coords supplied in 0x00E.
         this->npc->loc.p.moving = 0x8007;
     }
     else
     {
-        this->npc->status = STATUS_TYPE::DISAPPEAR;
+        this->npc->status = xi::Status::Disappear;
         // Missing 0x0001 bit here
         this->npc->loc.p.moving = 0x8006;
     }
@@ -168,6 +162,8 @@ void CTransportHandler::InitializeTransport(IPP mapIPP)
             ShowErrorFmt("Transport {}: transport not found", zoneTown.ship.transportId);
             continue;
         }
+
+        static_cast<CNpcEntity*>(zoneTown.ship.npc)->setAlwaysRelevant(true);
 
         zoneTown.ship.animationArrive = rset->get<uint8>("anim_arrive");
         zoneTown.ship.animationDepart = rset->get<uint8>("anim_depart");
@@ -452,6 +448,8 @@ void CTransportHandler::insertElevator(Elevator_t elevator)
         ShowError("Elevator could not load NPC entity. Ignoring this elevator.");
         return;
     }
+
+    elevator.Elevator->setAlwaysRelevant(true);
 
     // check to see if this elevator already exists
     for (auto& i : ElevatorList)

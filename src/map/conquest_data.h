@@ -1,4 +1,4 @@
-/*
+﻿/*
 ===========================================================================
 
   Copyright (c) 2023 LandSandBoat Dev Teams
@@ -35,10 +35,10 @@ struct region_control_t
 
 struct influence_t
 {
-    uint16 sandoria_influence;
-    uint16 bastok_influence;
-    uint16 windurst_influence;
-    uint16 beastmen_influence;
+    int32 sandoria_influence;
+    int32 bastok_influence;
+    int32 windurst_influence;
+    int32 beastmen_influence;
 };
 
 //
@@ -75,7 +75,7 @@ public:
     //
     // Gets the array of region controls, indexed by regionId.
     //
-    auto getRegionControls() -> const std::vector<region_control_t>;
+    auto getRegionControls() const -> const std::vector<region_control_t>&;
 
     //
     // Adds the given influence points to the given nation for the given

@@ -160,7 +160,7 @@ function utils.shuffle(inputTable)
     local shuffledTable = {}
 
     for _, v in ipairs(inputTable) do
-        local pos = math.random(1, #shuffledTable + 1)
+        local pos = math.randomInt(1, #shuffledTable + 1)
         table.insert(shuffledTable, pos, v)
     end
 
@@ -509,45 +509,6 @@ function utils.getActiveJobLevel(actor, job)
     return jobLevel
 end
 
--- System Strength Bonus table.  This is used by xi.mobskills.mobBreathMove, but determines weakness of
--- a defending system, vs the attacking system.  This table is indexed by the attacker.
--- This table can scale beyond two values, but at this time, no data has been recorded.
--- Values: 1 == Bonus, -1 == Weakness, 0 == Default (No Weakness or Bonus)
-local systemStrengthTable =
-{
-    [xi.eco.BEAST   ] = { [xi.eco.LIZARD  ] = 1, [xi.eco.PLANTOID] = -1, },
-    [xi.eco.LIZARD  ] = { [xi.eco.VERMIN  ] = 1, [xi.eco.BEAST   ] = -1, },
-    [xi.eco.VERMIN  ] = { [xi.eco.PLANTOID] = 1, [xi.eco.LIZARD  ] = -1, },
-    [xi.eco.PLANTOID] = { [xi.eco.BEAST   ] = 1, [xi.eco.VERMIN  ] = -1, },
-    [xi.eco.AQUAN   ] = { [xi.eco.AMORPH  ] = 1, [xi.eco.BIRD    ] = -1, },
-    [xi.eco.AMORPH  ] = { [xi.eco.BIRD    ] = 1, [xi.eco.AQUAN   ] = -1, },
-    [xi.eco.BIRD    ] = { [xi.eco.AQUAN   ] = 1, [xi.eco.AMORPH  ] = -1, },
-    [xi.eco.UNDEAD  ] = { [xi.eco.ARCANA  ] = 1, },
-    [xi.eco.ARCANA  ] = { [xi.eco.UNDEAD  ] = 1, },
-    [xi.eco.DRAGON  ] = { [xi.eco.DEMON   ] = 1, },
-    [xi.eco.DEMON   ] = { [xi.eco.DRAGON  ] = 1, },
-    [xi.eco.LUMINIAN] = { [xi.eco.LUMINION] = 1, },
-    [xi.eco.LUMINION] = { [xi.eco.LUMINIAN] = 1, },
-}
-
----@nodiscard
----@param attackerSystem xi.eco
----@param defenderSystem xi.eco
----@return integer
-function utils.getEcosystemStrengthBonus(attackerSystem, defenderSystem)
-    for k, v in pairs(systemStrengthTable) do
-        if k == attackerSystem then
-            for defId, weakValue in pairs(systemStrengthTable[k]) do
-                if defId == defenderSystem then
-                    return weakValue
-                end
-            end
-        end
-    end
-
-    return 0
-end
-
 -- utils.mask contains functions for bitmask variables
 utils.mask =
 {
@@ -700,7 +661,7 @@ function utils.randomEntryIdx(t)
         keys[#keys + 1] = key
     end
 
-    local index = keys[math.random(1, #keys)]
+    local index = keys[math.randomInt(1, #keys)]
     return index, t[index]
 end
 
@@ -1177,7 +1138,7 @@ function utils.selectFromLootGroups(actor, lootTable)
         local quantity = lootGroup.quantity or 1
 
         for j = 1, quantity do
-            local roll    = math.random(max)
+            local roll    = math.randomInt(1, max)
             local current = 0
 
             for _, entry in pairs(lootGroup) do
@@ -1200,4 +1161,27 @@ function utils.selectFromLootGroups(actor, lootTable)
     end
 
     return selectedLoot
+end
+
+-- Returns the lowest slot number not currently occupied by any status effect on the entity
+---@param entity table
+---@return integer
+function utils.getLowestFreeSlot(entity)
+    local effects = entity:getStatusEffects()
+
+    -- Sort effects by slot number to ensure we can find the lowest free slot
+    table.sort(effects, function(a, b)
+        return a:getEffectSlot() < b:getEffectSlot()
+    end)
+
+    local lowestFreeSlot = 1
+    for _, effect in ipairs(effects) do
+        if effect:getEffectSlot() == lowestFreeSlot then
+            lowestFreeSlot = lowestFreeSlot + 1
+        elseif effect:getEffectSlot() > lowestFreeSlot then
+            break
+        end
+    end
+
+    return lowestFreeSlot
 end

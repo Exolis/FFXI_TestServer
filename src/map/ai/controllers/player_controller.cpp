@@ -23,15 +23,12 @@
 
 #include "ability.h"
 #include "ai/ai_container.h"
-#include "ai/states/death_state.h"
-#include "ai/states/inactive_state.h"
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "items/item_weapon.h"
 #include "latent_effect_container.h"
 #include "packets/s2c/0x029_battle_message.h"
 #include "packets/s2c/0x058_assist.h"
 #include "recast_container.h"
-#include "roe.h"
 #include "status_effect_container.h"
 #include "utils/battleutils.h"
 #include "utils/charutils.h"
@@ -205,7 +202,7 @@ bool CPlayerController::WeaponSkill(uint16 targid, uint16 wsid)
             return false;
         }
 
-        if (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_AMNESIA) || (PChar->StatusEffectContainer->HasStatusEffect(EFFECT_IMPAIRMENT) && (PChar->StatusEffectContainer->GetStatusEffect(EFFECT_IMPAIRMENT)->GetPower() == 0x02 || PChar->StatusEffectContainer->GetStatusEffect(EFFECT_IMPAIRMENT)->GetPower() == 0x03)))
+        if (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Amnesia) || (PChar->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Impairment) && (PChar->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Impairment)->GetPower() == 0x02 || PChar->StatusEffectContainer->GetStatusEffect(xi::StatusEffect::Impairment)->GetPower() == 0x03)))
         {
             PChar->pushPacket<GP_SERV_COMMAND_BATTLE_MESSAGE>(PChar, PChar, 0, 0, MsgBasic::CannotUseAnyWeaponskill);
             return false;
@@ -217,7 +214,7 @@ bool CPlayerController::WeaponSkill(uint16 targid, uint16 wsid)
             return false;
         }
 
-        if (PWeaponSkill->getType() == SKILL_ARCHERY || PWeaponSkill->getType() == SKILL_MARKSMANSHIP)
+        if (static_cast<xi::SkillType>(PWeaponSkill->getType()) == xi::SkillType::Archery || static_cast<xi::SkillType>(PWeaponSkill->getType()) == xi::SkillType::Marksmanship)
         {
             auto* PItem  = dynamic_cast<CItemWeapon*>(PChar->getEquip(SLOT_AMMO));
             auto* weapon = dynamic_cast<CItemWeapon*>(PChar->m_Weapons[SLOT_RANGED]);

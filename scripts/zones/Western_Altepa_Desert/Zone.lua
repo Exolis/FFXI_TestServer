@@ -9,6 +9,14 @@ local zoneObject = {}
 
 zoneObject.onInitialize = function(zone)
     xi.beastmenTreasure.updatePeddlestox(xi.zone.YUHTUNGA_JUNGLE, ID.npc.PEDDLESTOX)
+
+    -- loop through Altepa Gate, Ruby/Topaz/Emerald/Sapphire pillar/column, set them all always relevant
+    for i = 0, 8, 1 do
+        local npc = GetNPCByID(ID.npc.ALTEPA_GATE + i)
+        if npc then
+            npc:setNpcAlwaysRelevant(true)
+        end
+    end
 end
 
 zoneObject.onGameDay = function()
@@ -59,7 +67,7 @@ zoneObject.onZoneWeatherChange = function(weather)
                 kvMob:getRespawnTime() == 0
             then
                 if
-                    (weather == xi.weather.DUST_STORM and math.random(1, 100) <= 50) or
+                    (weather == xi.weather.DUST_STORM and math.randomInt(1, 100) <= 50) or
                     weather == xi.weather.SAND_STORM
                 then
                     DisallowRespawn(ID.mob.KING_VINEGARROON, false) -- Allow respawn.

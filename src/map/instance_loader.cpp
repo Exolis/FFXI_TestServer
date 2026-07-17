@@ -24,16 +24,13 @@
 #include "instance_loader.h"
 #include "zone_instance.h"
 
-#include "entities/charentity.h"
-#include "entities/mobentity.h"
-#include "entities/npcentity.h"
+#include "entities/mob_entity.h"
+#include "entities/npc_entity.h"
 #include "instance.h"
 #include "items/item_weapon.h"
 #include "lua/luautils.h"
-#include "map_engine.h"
 #include "mob_modifier.h"
 #include "mob_spell_list.h"
-#include "zone_entities.h"
 
 #include "utils/instanceutils.h"
 #include "utils/mobutils.h"
@@ -46,7 +43,7 @@ CInstanceLoader::CInstanceLoader(uint32 instanceid, CCharEntity* PRequester)
     auto   instanceData = instanceutils::GetInstanceData(instanceid);
     CZone* PZone        = zoneutils::GetZone(instanceData.instance_zone);
 
-    if (!PZone || !(PZone->GetTypeMask() & ZONE_TYPE::INSTANCED))
+    if (!PZone || !((PZone->GetTypeMask() & xi::ZoneType::Instanced) != xi::ZoneType::Unknown))
     {
         ShowError("Invalid zone for instanceid: %d", instanceid);
         return;
@@ -62,9 +59,13 @@ CInstanceLoader::~CInstanceLoader()
     TracyZoneScoped;
 }
 
-CInstance* CInstanceLoader::LoadInstance() const
+auto CInstanceLoader::LoadInstance() const -> CInstance*
 {
     TracyZoneScoped;
+
+    const auto realZoneId      = m_PZone->GetID();
+    const auto overlayId       = m_PInstance->overlayId();
+    const auto effectiveZoneId = (overlayId != 0) ? overlayId : static_cast<uint32>(realZoneId);
 
     auto rset = db::preparedStmt("SELECT mobname, mobid, pos_rot, pos_x, pos_y, pos_z, "
                                  "respawntime, spawntype, dropid, mob_groups.HP, mob_groups.MP, minLevel, maxLevel, "
@@ -77,15 +78,20 @@ CInstance* CInstanceLoader::LoadInstance() const
                                  "paralyze_res_rank, bind_res_rank, silence_res_rank, slow_res_rank, poison_res_rank, light_sleep_res_rank, dark_sleep_res_rank, blind_res_rank, "
                                  "Element, mob_pools.speciesid, name_prefix, entityFlags, animationsub, "
                                  "(mob_species_system.HP / 100) AS hp_scale, (mob_species_system.MP / 100) AS mp_scale, hasSpellScript, spellList, mob_groups.poolid, "
-                                 "allegiance, namevis, aggro, mob_pools.skill_list_id, mob_pools.true_detection, detects, "
+                                 "allegiance, namevis, aggro, mob_pools.roamflag, mob_pools.skill_list_id, mob_pools.true_detection, detects, "
                                  "mob_species_system.charmable, mob_pools.modelSize, mob_pools.modelHitboxSize "
-                                 "FROM instance_entities INNER JOIN mob_spawn_points ON instance_entities.id = mob_spawn_points.mobid "
-                                 "INNER JOIN mob_groups ON mob_groups.groupid = mob_spawn_points.groupid AND mob_groups.zoneid=((mob_spawn_points.mobid>>12)&0xFFF) "
+                                 "FROM instance_entities "
+                                 "INNER JOIN mob_spawn_points ON instance_entities.id = mob_spawn_points.mobid "
+                                 "INNER JOIN mob_groups ON mob_groups.groupid = mob_spawn_points.groupid AND mob_groups.zoneid = ? "
                                  "INNER JOIN mob_pools ON mob_groups.poolid = mob_pools.poolid "
                                  "INNER JOIN mob_resistances ON mob_resistances.resist_id = mob_pools.resist_id "
                                  "INNER JOIN mob_species_system ON mob_pools.speciesid = mob_species_system.speciesID "
-                                 "WHERE instanceid = ? AND NOT (pos_x = 0 AND pos_y = 0 AND pos_z = 0)",
-                                 m_PInstance->GetID());
+                                 "WHERE instanceid = ? "
+                                 "  AND ((mob_spawn_points.mobid >> 12) & 0xFFF) = ? "
+                                 "  AND NOT (pos_x = 0 AND pos_y = 0 AND pos_z = 0)",
+                                 realZoneId,
+                                 m_PInstance->GetID(),
+                                 effectiveZoneId);
 
     if (!m_PInstance->Failed())
     {
@@ -104,7 +110,7 @@ CInstance* CInstanceLoader::LoadInstance() const
             PMob->loc.p                 = PMob->m_SpawnPoint;
 
             PMob->m_RespawnTime = std::chrono::seconds(rset->get<uint32>("respawntime"));
-            PMob->m_SpawnType   = rset->get<SPAWNTYPE>("spawntype");
+            PMob->m_SpawnType   = rset->get<xi::SpawnType>("spawntype");
             PMob->m_DropID      = rset->get<uint32>("dropid");
 
             PMob->HPmodifier = rset->get<uint32>("HP");
@@ -121,16 +127,16 @@ CInstance* CInstanceLoader::LoadInstance() const
             PMob->SetSJob(rset->get<uint8>("sJob"));
 
             static_cast<CItemWeapon*>(PMob->m_Weapons[SLOT_MAIN])->setMaxHit(1);
-            static_cast<CItemWeapon*>(PMob->m_Weapons[SLOT_MAIN])->setSkillType(rset->get<uint8>("cmbSkill"));
+            static_cast<CItemWeapon*>(PMob->m_Weapons[SLOT_MAIN])->setSkillType(rset->get<xi::SkillType>("cmbSkill"));
             PMob->m_dmgMult = rset->get<uint16>("cmbDmgMult");
             static_cast<CItemWeapon*>(PMob->m_Weapons[SLOT_MAIN])->setDelay(rset->get<uint16>("cmbDelay"));
             static_cast<CItemWeapon*>(PMob->m_Weapons[SLOT_MAIN])->setBaseDelay(rset->get<uint16>("cmbDelay"));
 
-            PMob->m_Behavior  = rset->get<uint16>("behavior");
+            PMob->m_Behavior  = rset->get<xi::Behavior>("behavior");
             PMob->m_Link      = rset->get<uint8>("links");
-            PMob->m_Type      = rset->get<uint8>("mobType");
-            PMob->m_Immunity  = rset->get<IMMUNITY>("immunity");
-            PMob->m_EcoSystem = rset->get<ECOSYSTEM>("ecosystemID");
+            PMob->m_Type      = rset->get<xi::MobType>("mobType");
+            PMob->m_Immunity  = rset->get<xi::Immunity>("immunity");
+            PMob->m_EcoSystem = rset->get<xi::Ecosystem>("ecosystemID");
 
             PMob->baseSpeed      = rset->get<uint8>("speed"); // Overwrites baseentity.cpp's defined baseSpeed
             PMob->animationSpeed = rset->get<uint8>("speed"); // Overwrites baseentity.cpp's defined animationSpeed
@@ -185,7 +191,7 @@ CInstance* CInstanceLoader::LoadInstance() const
             PMob->m_Element     = rset->get<uint8>("Element");
             PMob->m_Species     = rset->get<uint16>("speciesid");
             PMob->m_name_prefix = rset->get<uint8>("name_prefix");
-            PMob->m_flags       = rset->get<uint32>("entityFlags");
+            PMob->m_flags       = rset->get<xi::EntityFlags>("entityFlags");
 
             // Special sub animation for Mob (yovra, jailer of love, phuabo)
             // yovra 1: On top/in the sky, 2: , 3: On top/in the sky
@@ -200,14 +206,15 @@ CInstance* CInstanceLoader::LoadInstance() const
 
             PMob->m_Pool = rset->get<uint32>("poolid");
 
-            PMob->allegiance      = rset->get<ALLEGIANCE_TYPE>("allegiance");
-            PMob->namevis         = rset->get<uint8>("namevis");
+            PMob->allegiance      = rset->get<xi::Allegiance>("allegiance");
+            PMob->namevis         = rset->get<xi::NameVis>("namevis");
+            PMob->m_roamFlags     = rset->get<xi::RoamFlag>("roamflag");
             PMob->modelHitboxSize = std::max<float>(0.0f, rset->getOrDefault<float>("modelHitboxSize", 0) / 10.f);
             PMob->modelSize       = rset->getOrDefault<uint8>("modelSize", 0);
             const auto aggro      = rset->get<uint32>("aggro");
             PMob->m_Aggro         = aggro;
             // If a special instanced mob aggros, it should always aggro regardless of level.
-            if (PMob->m_Type & MOBTYPE_EVENT)
+            if ((PMob->m_Type & xi::MobType::Event) != xi::MobType::Normal)
             {
                 PMob->setMobMod(MOBMOD_ALWAYS_AGGRO, aggro);
             }
@@ -219,7 +226,7 @@ CInstance* CInstanceLoader::LoadInstance() const
 
             // Overwrite base family charmables depending on mob type. Disallowed mobs which should be charmable
             // can be set in in their onInitialize
-            if (PMob->m_Type & MOBTYPE_EVENT || PMob->m_Type & MOBTYPE_FISHED || PMob->m_Type & MOBTYPE_BATTLEFIELD || PMob->m_Type & MOBTYPE_NOTORIOUS)
+            if ((PMob->m_Type & xi::MobType::Event) != xi::MobType::Normal || (PMob->m_Type & xi::MobType::Fished) != xi::MobType::Normal || (PMob->m_Type & xi::MobType::Battlefield) != xi::MobType::Normal || (PMob->m_Type & xi::MobType::Notorious) != xi::MobType::Normal)
             {
                 PMob->setMobMod(MOBMOD_CHARMABLE, 0);
             }
@@ -231,7 +238,7 @@ CInstance* CInstanceLoader::LoadInstance() const
             m_PInstance->InsertMOB(PMob);
         }
 
-        const uint32 zoneMin = (m_PZone->GetID() << 12) + 0x1000000;
+        const uint32 zoneMin = (effectiveZoneId << 12) + 0x1000000;
         const uint32 zoneMax = zoneMin + 1024;
 
         rset = db::preparedStmt("SELECT npcid, name, pos_rot, pos_x, pos_y, pos_z, "
@@ -265,16 +272,16 @@ CInstance* CInstanceLoader::LoadInstance() const
             PNpc->animation    = rset->get<uint8>("animation");
             PNpc->animationsub = rset->get<uint8>("animationsub");
 
-            PNpc->namevis = rset->get<uint8>("namevis");
-            PNpc->status  = rset->get<STATUS_TYPE>("status");
-            PNpc->m_flags = rset->get<uint32>("entityFlags");
+            PNpc->namevis = rset->get<xi::NameVis>("namevis");
+            PNpc->status  = rset->get<xi::Status>("status");
+            PNpc->m_flags = rset->get<xi::EntityFlags>("entityFlags");
 
             uint16 sqlModelID[10];
             db::extractFromBlob(rset, "look", sqlModelID);
             PNpc->look = look_t(sqlModelID);
 
             PNpc->name_prefix = rset->get<uint8>("name_prefix");
-            PNpc->widescan    = rset->get<uint8>("widescan");
+            PNpc->setWidescan(rset->get<uint8>("widescan"));
 
             PNpc->PInstance = m_PInstance;
 
@@ -292,7 +299,7 @@ CInstance* CInstanceLoader::LoadInstance() const
             ((CMobEntity*)PMob)->saveMobModifiers();
 
             // Add to cache
-            luautils::CacheLuaObjectFromFile(
+            luautils::LoadLuaObjectFromFile(
                 fmt::format("./scripts/zones/{}/mobs/{}.lua",
                             PMob->loc.zone->getName(),
                             PMob->getName()));
@@ -306,7 +313,7 @@ CInstance* CInstanceLoader::LoadInstance() const
             luautils::OnNpcSpawn(PNpc);
 
             // Add to cache
-            luautils::CacheLuaObjectFromFile(
+            luautils::LoadLuaObjectFromFile(
                 fmt::format("./scripts/zones/{}/npcs/{}.lua",
                             PNpc->loc.zone->getName(),
                             PNpc->getName()));
@@ -314,7 +321,7 @@ CInstance* CInstanceLoader::LoadInstance() const
         // clang-format on
 
         // Cache Instance script (TODO: This will be done multiple times, don't do that)
-        luautils::CacheLuaObjectFromFile(instanceutils::GetInstanceData(m_PInstance->GetID()).filename);
+        luautils::LoadLuaObjectFromFile(instanceutils::GetInstanceData(m_PInstance->GetID()).filename);
 
         // Finish setup
         luautils::OnInstanceCreatedCallback(m_PRequester, m_PInstance);

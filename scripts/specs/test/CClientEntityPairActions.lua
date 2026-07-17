@@ -150,6 +150,37 @@ end
 function CClientEntityPairActions:skillchain(target, ...)
 end
 
+---Buy an item from a guild shop
+---@param itemId xi.item Item ID
+---@param quantity integer Amount to buy
+---@return nil
+function CClientEntityPairActions:guildBuy(itemId, quantity)
+end
+
+---Sell an item to a guild shop
+---@param itemId xi.item Item ID
+---@param quantity integer Amount to sell
+---@return nil
+function CClientEntityPairActions:guildSell(itemId, quantity)
+end
+
+---@class GuildListEntry
+---@field count integer Current stock
+---@field max integer Max stock
+---@field price integer Buy or sell price
+
+---Request a guild shop's buy list and return it decoded
+---@nodiscard
+---@return table<integer, GuildListEntry> list Entries keyed by item ID
+function CClientEntityPairActions:guildBuyList()
+end
+
+---Request a guild shop's sell list and return it decoded
+---@nodiscard
+---@return table<integer, GuildListEntry> list Entries keyed by item ID
+function CClientEntityPairActions:guildSellList()
+end
+
 ---Move an item between containers or split a stack
 ---@param srcContainer xi.inventoryLocation Source container
 ---@param srcSlot integer Source slot index
@@ -190,4 +221,49 @@ end
 ---@param ingredients xi.item[] Ingredient item IDs (1..8)
 ---@return nil
 function CClientEntityPairActions:craft(crystal, ingredients)
+end
+
+---Sow a seed or feed a crystal to a gardening pot. Pot and add item must be in a mog safe.
+---@param potContainer xi.inventoryLocation Container holding the flowerpot
+---@param potSlot integer Flowerpot slot index
+---@param addContainer xi.inventoryLocation Container holding the seed or crystal
+---@param addSlot integer Seed or crystal slot index
+---@return nil
+function CClientEntityPairActions:plantAdd(potContainer, potSlot, addContainer, addSlot)
+end
+
+---Examine a plant; resets its wilt timer.
+---@param potContainer xi.inventoryLocation Container holding the flowerpot
+---@param potSlot integer Flowerpot slot index
+---@return nil
+function CClientEntityPairActions:plantCheck(potContainer, potSlot)
+end
+
+---Harvest a mature plant; uproot clears the pot instead.
+---@param potContainer xi.inventoryLocation Container holding the flowerpot
+---@param potSlot integer Flowerpot slot index
+---@param uproot? boolean Uproot instead of harvesting (default false)
+---@return nil
+function CClientEntityPairActions:plantHarvest(potContainer, potSlot, uproot)
+end
+
+---Dry a plant so it stops growing and won't wilt.
+---@param potContainer xi.inventoryLocation Container holding the flowerpot
+---@param potSlot integer Flowerpot slot index
+---@return nil
+function CClientEntityPairActions:plantDry(potContainer, potSlot)
+end
+
+---Install a furnishing on the 1st floor at grid cell (x, z).
+---@param container xi.inventoryLocation Container holding the furnishing
+---@param slot integer Furnishing slot index
+---@param x integer Grid x cell
+---@param z integer Grid z cell
+---@return nil
+function CClientEntityPairActions:placeFurniture(container, slot, x, z)
+end
+
+---Finish placing furniture; recomputes the active moghancement.
+---@return nil
+function CClientEntityPairActions:finishFurnishing()
 end

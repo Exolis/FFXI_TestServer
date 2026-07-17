@@ -2,7 +2,6 @@
 -- Beastmaster Job Utilities
 -----------------------------------
 require('scripts/globals/ability')
-require('scripts/globals/jobpoints')
 -----------------------------------
 xi = xi or {}
 xi.job_utils = xi.job_utils or {}
@@ -158,7 +157,7 @@ xi.job_utils.beastmaster.attemptCharm = function(charmer, target)
     then
         local resist = applyResistanceAddEffect(charmer, target, xi.element.ICE, 0)
         if not target:hasStatusEffect(xi.effect.BIND) and resist >= 0.5 then
-            target:addStatusEffect(xi.effect.BIND, { power = 1, duration = math.random(1, 5), origin = charmer })
+            target:addStatusEffect(xi.effect.BIND, { power = 1, duration = math.randomInt(1, 5), origin = charmer })
             return xi.msg.basic.JA_ENFEEB_IS
         else
             return xi.msg.basic.JA_MISS
@@ -169,7 +168,7 @@ xi.job_utils.beastmaster.attemptCharm = function(charmer, target)
     local chance = xi.job_utils.beastmaster.getCharmChance(charmer, target, true)
 
     -- If successful then calculate duration and charm
-    if chance > math.random(1, 100) then
+    if chance > math.randomInt(1, 100) then
         local duration = getCharmDuration(charmer, target)
 
         if duration > 0 then
@@ -256,6 +255,12 @@ xi.job_utils.beastmaster.checkTame = function(player, target, ability)
         return xi.msg.basic.ALREADY_HAS_A_PET, 0
     end
 
+    for _, member in pairs(player:getPartyWithTrusts()) do
+        if member:isTrust() then
+            return xi.msg.basic.UNABLE_TO_USE_JA, 0
+        end
+    end
+
     return 0, 0
 end
 
@@ -291,25 +296,30 @@ end
 -- On Ability Check For Leave, Heel and Stay.
 xi.job_utils.beastmaster.checkPetCommand = function(player, target, ability)
     local pet = player:getPet()
+    if not pet then
+        return xi.msg.basic.REQUIRES_A_PET, 0
+    end
 
     if
-        player:hasJugPet() or
-        pet:getObjType() == xi.objType.MOB
+        not player:hasJugPet() or
+        pet:getObjType() ~= xi.objType.MOB
     then
-        if player:getPet() == nil then
-            return xi.msg.basic.REQUIRES_A_PET, 0
-        end
+        return xi.msg.basic.REQUIRES_A_PET, 0
     end
 
     return 0, 0
 end
 
 xi.job_utils.beastmaster.checkFight = function(player, target, ability)
-    if player:getPet() == nil then
+    local pet = player:getPet()
+    if not pet then
         return xi.msg.basic.REQUIRES_A_PET, 0
-    elseif
-        target:getID() == player:getPet():getID() or
-        (target:getMaster() ~= nil and target:getMaster():isPC())
+    end
+
+    local targetMaster = target:getMaster()
+    if
+        target:getID() == pet:getID() or
+        (targetMaster and targetMaster:isPC())
     then
         return xi.msg.basic.CANNOT_ATTACK_TARGET, 0
     end
@@ -350,12 +360,13 @@ xi.job_utils.beastmaster.checkSic = function(player, target, ability)
 
     if pet == nil then
         return xi.msg.basic.REQUIRES_A_PET, 0
-    elseif pet:getHP() == 0 then
+    elseif
+        pet:getHP() == 0 or
+        not pet:hasTPMoves()
+    then
         return xi.msg.basic.UNABLE_TO_USE_JA, 0
     elseif pet:getTarget() == nil then
         return xi.msg.basic.PET_CANNOT_DO_ACTION, 0
-    elseif not pet:hasTPMoves() then
-        return xi.msg.basic.UNABLE_TO_USE_JA, 0
     end
 
     return 0, 0

@@ -29,6 +29,7 @@
 enum class SpellID : uint16;
 class CLuaClientEntityPair;
 class CLuaBaseEntity;
+
 class CLuaClientEntityPairActions
 {
 public:
@@ -58,11 +59,24 @@ public:
     void engage(CLuaBaseEntity* mob) const;
     void skillchain(CLuaBaseEntity* target, sol::variadic_args weaponskillIds) const;
 
+    void guildBuy(uint16 itemId, uint8 quantity) const;
+    void guildSell(uint16 itemId, uint8 quantity) const;
+    auto guildBuyList() const -> sol::table;
+    auto guildSellList() const -> sol::table;
+
     void moveItem(uint8 srcContainer, uint8 srcSlot, uint8 dstContainer, uint32 quantity, sol::optional<uint8> dstSlot) const;
     void sortContainer(uint8 container) const;
     void dropItem(uint8 container, uint8 slot, uint32 quantity) const;
     void setLockstyle(uint8 mode, sol::optional<sol::table> items) const;
     void craft(uint16 crystalItemId, const sol::table& ingredients) const;
+
+    void plantAdd(uint8 potContainer, uint8 potSlot, uint8 addContainer, uint8 addSlot) const;
+    void plantCheck(uint8 potContainer, uint8 potSlot) const;
+    void plantHarvest(uint8 potContainer, uint8 potSlot, sol::optional<bool> uproot) const;
+    void plantDry(uint8 potContainer, uint8 potSlot) const;
+
+    void placeFurniture(uint8 container, uint8 slot, uint8 x, uint8 z) const;
+    void finishFurnishing() const;
 
     static void Register();
 

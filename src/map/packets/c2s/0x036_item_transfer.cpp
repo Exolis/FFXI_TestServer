@@ -1,4 +1,4 @@
-/*
+﻿/*
 ===========================================================================
 
   Copyright (c) 2025 LandSandBoat Dev Teams
@@ -21,7 +21,7 @@
 
 #include "0x036_item_transfer.h"
 
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "enums/msg_std.h"
 #include "lua/luautils.h"
 #include "packets/s2c/0x053_systemmes.h"
@@ -36,10 +36,10 @@ const auto auditTrade = [](Scheduler& scheduler, CCharEntity* PChar, CBaseEntity
 {
     if (settings::get<bool>("map.AUDIT_PLAYER_TRADES"))
     {
-        const auto sender       = PChar->id;
-        const auto senderName   = PChar->getName();
-        const auto receiver     = PNpc->id;
-        const auto receiverName = PNpc->getName();
+        const auto  sender       = PChar->id;
+        const auto& senderName   = PChar->getName();
+        const auto  receiver     = PNpc->id;
+        const auto& receiverName = PNpc->getName();
 
         scheduler.postToWorkerThread(
             [itemId, quantity, sender, senderName, receiver, receiverName]()
@@ -66,7 +66,7 @@ auto GP_CLI_COMMAND_ITEM_TRANSFER::validate(MapSession* PSession, const CCharEnt
 void GP_CLI_COMMAND_ITEM_TRANSFER::process(MapSession* PSession, CCharEntity* PChar) const
 {
     // If PChar is invisible don't allow the trade
-    if (PChar->StatusEffectContainer->HasStatusEffectByFlag(EFFECTFLAG_INVISIBLE))
+    if (PChar->StatusEffectContainer->HasStatusEffectByFlag(xi::StatusEffectFlag::Invisible))
     {
         PChar->pushPacket<GP_SERV_COMMAND_SYSTEMMES>(0, 0, MsgStd::CannotWhileInvisible);
         return;
@@ -83,7 +83,7 @@ void GP_CLI_COMMAND_ITEM_TRANSFER::process(MapSession* PSession, CCharEntity* PC
     }
 
     // Only allow trading with mobs if it's status is an NPC
-    if (PNpc->objtype == TYPE_MOB && PNpc->status != STATUS_TYPE::NORMAL)
+    if (PNpc->objtype == TYPE_MOB && PNpc->status != xi::Status::Normal)
     {
         return;
     }
@@ -99,19 +99,19 @@ void GP_CLI_COMMAND_ITEM_TRANSFER::process(MapSession* PSession, CCharEntity* PC
 
         if (PItem == nullptr || PItem->getQuantity() < quantity)
         {
-            ShowErrorFmt("GP_CLI_COMMAND_ITEM_TRANSFER: {} trying to trade NPC {} with invalid item!", PChar->getName(), PNpc->getName());
+            ShowErrorFmt("GP_CLI_COMMAND_ITEM_TRANSFER: {} trying to trade NPC {} with invalid item {} ({})!", PChar->getName(), PNpc->getName(), PItem->getName(), PItem->getID());
             return;
         }
 
         if (PItem->getReserve() > 0)
         {
-            ShowErrorFmt("GP_CLI_COMMAND_ITEM_TRANSFER: {} trying to trade NPC {} with reserved item!", PChar->getName(), PNpc->getName());
+            ShowErrorFmt("GP_CLI_COMMAND_ITEM_TRANSFER: {} trying to trade NPC {} with reserved item {} ({})!", PChar->getName(), PNpc->getName(), PItem->getName(), PItem->getID());
             return;
         }
 
         if (PItem->isSubType(ITEM_LOCKED))
         {
-            ShowErrorFmt("GP_CLI_COMMAND_ITEM_TRANSFER: {} trying to trade NPC {} with locked item!", PChar->getName(), PNpc->getName());
+            ShowErrorFmt("GP_CLI_COMMAND_ITEM_TRANSFER: {} trying to trade NPC {} with locked item {} ({})!", PChar->getName(), PNpc->getName(), PItem->getName(), PItem->getID());
             return;
         }
 

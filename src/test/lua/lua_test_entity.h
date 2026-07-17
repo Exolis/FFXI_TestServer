@@ -22,11 +22,10 @@
 #pragma once
 
 #include "lua_test_entity_assertions.h"
-#include "map/lua/lua_baseentity.h"
-
-#include <common/scheduler.h>
+#include "map/lua/lua_base_entity.h"
 
 class CBaseEntity;
+
 class CLuaTestEntity : public CLuaBaseEntity
 {
 public:

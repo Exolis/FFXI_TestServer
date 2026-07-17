@@ -90,7 +90,10 @@ set(PACKET_S2C_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/0x044_extended_job_pup.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x047_translate.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x047_translate.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/0x048_link_concierge.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x048_link_concierge_header.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x048_link_concierge_header.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x048_link_concierge_record.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x048_link_concierge_record.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x049_itemsearch.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x049_itemsearch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x04b_pbx_result.h
@@ -159,6 +162,7 @@ set(PACKET_S2C_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/0x065_wpos2.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x065_wpos2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x069_chocobo_racing.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x069_chocobo_racing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x06f_combine_ans.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x06f_combine_ans.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x070_combine_inf.h
@@ -168,6 +172,10 @@ set(PACKET_S2C_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/0x071_influence_campaign.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x071_influence_colonization.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x071_influence_colonization.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x073_chocobo_toteboard.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x073_chocobo_toteboard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x074_chocobo_list.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x074_chocobo_list.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x075_battlefield.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x075_battlefield.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x076_group_effects.h
@@ -175,7 +183,9 @@ set(PACKET_S2C_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/0x077_entity_vis.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x077_entity_vis.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x078_switch_start.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x078_switch_start.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x079_switch_proc.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x079_switch_proc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x082_guild_buy.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x082_guild_buy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x083_guild_buylist.h
@@ -284,6 +294,8 @@ set(PACKET_S2C_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/0x119_abil_recast.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x11a_emote_list.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x11a_emote_list.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x11c_lockstyle_error.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/0x11c_lockstyle_error.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/0x11d_partyreq.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x11e_jump.h
     ${CMAKE_CURRENT_SOURCE_DIR}/0x11e_jump.cpp

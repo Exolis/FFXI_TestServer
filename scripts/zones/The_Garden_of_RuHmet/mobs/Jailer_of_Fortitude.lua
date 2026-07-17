@@ -33,7 +33,7 @@ entity.onMobSpawn = function(mob)
     mob:setModelId(1169)
     mob:setMod(xi.mod.UDMGPHYS, -9500)
     mob:setMod(xi.mod.UDMGRANGE, -9500)
-    mob:setMobMod(xi.mobMod.WEAPON_BONUS, 73)
+    mob:setMobMod(xi.mobMod.BASE_DAMAGE_MODIFIER, 73)
 end
 
 entity.onMobFight = function(mob, target)
@@ -94,7 +94,7 @@ end
 
 entity.onMobDespawn = function(mob)
     -- Move QM to random location
-    GetNPCByID(ID.npc.QM_JAILER_OF_FORTITUDE):setPos(unpack(gardenGlobal.qmPosFortTable[math.random(1, 5)]))
+    GetNPCByID(ID.npc.QM_JAILER_OF_FORTITUDE):setPos(unpack(gardenGlobal.qmPosFortTable[math.randomInt(1, 5)]))
 end
 
 return entity

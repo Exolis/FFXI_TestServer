@@ -8,7 +8,7 @@ local ID = zones[xi.zone.BEARCLAW_PINNACLE]
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     local msg     = 0
     local offset  = target:getBattlefield():getArea() - 1
     local snollID = ID.mob.SNOLL_TZAR_OFFSET + offset
@@ -33,7 +33,7 @@ itemObject.onItemUse = function(target, player)
     if saltTime < currentTime then
         target:messageText(target, ID.text.BEGINS_TO_MELT)
         target:setLocalVar('saltTime', currentTime + 20)
-        target:setLocalVar('nextSteam', currentTime + math.random(7, 10))
+        target:setLocalVar('nextSteam', currentTime + math.randomInt(7, 10))
 
     -- Extend existing salt duration by 20 seconds
     else

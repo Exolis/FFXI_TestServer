@@ -57,6 +57,7 @@ enum ConquestMessage : uint8
     // Influence point update from any zone to world.
     M2W_AddInfluencePoints,
 };
+
 DECLARE_FORMAT_AS_UNDERLYING(ConquestMessage);
 
 // W2M_BroadcastInfluencePoints
@@ -87,6 +88,7 @@ struct ConquestAddInfluencePoints
 enum BesiegedMessage : uint8
 {
 };
+
 DECLARE_FORMAT_AS_UNDERLYING(BesiegedMessage);
 
 //
@@ -122,6 +124,7 @@ enum CampaignMessage : uint8
     // A map server sends a battle status change to the world server.
     Campaign_M2W_SetBattleStatus,
 };
+
 DECLARE_FORMAT_AS_UNDERLYING(CampaignMessage);
 
 // Per-zone campaign data sent in broadcasts
@@ -193,4 +196,5 @@ struct CampaignSetBattleStatus
 enum ColonizationMessage : uint8
 {
 };
+
 DECLARE_FORMAT_AS_UNDERLYING(ColonizationMessage);

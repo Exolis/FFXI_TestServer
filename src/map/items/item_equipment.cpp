@@ -21,9 +21,11 @@
 
 #include "item_equipment.h"
 
-#include "common/database.h"
 #include "common/logging.h"
 #include "common/utils.h"
+
+#include <common/types/hash_map.h>
+
 #include "exdata/augment_standard.h"
 #include "exdata/augment_trial.h"
 
@@ -53,7 +55,7 @@ struct AugmentDataRow
 };
 
 using AugmentDataRows = std::vector<AugmentDataRow>;
-std::unordered_map<uint16, AugmentDataRows> sAugmentData;
+HashMap<uint16, AugmentDataRows> sAugmentData;
 
 } // namespace
 
@@ -334,7 +336,7 @@ void CItemEquipment::addPetModifier(CPetModifier modifier)
     petModList.emplace_back(modifier);
 }
 
-void CItemEquipment::addLatent(LATENT ConditionsID, uint16 ConditionsValue, Mod ModValue, int16 ModPower)
+void CItemEquipment::addLatent(xi::Latent ConditionsID, uint16 ConditionsValue, Mod ModValue, int16 ModPower)
 {
     itemLatent latent{ ConditionsID, ConditionsValue, ModValue, ModPower };
     latentList.emplace_back(latent);

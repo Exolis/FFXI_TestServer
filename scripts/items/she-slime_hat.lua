@@ -7,12 +7,12 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     return xi.itemUtils.itemBoxOnItemCheck(target)
 end
 
 itemObject.onItemUse = function(target)
-    npcUtil.giveItem(target, { { xi.item.SHE_SLIME_CANDY, math.random(5, 12) } })
+    npcUtil.giveItem(target, { { xi.item.SHE_SLIME_CANDY, math.randomInt(5, 12) } })
 end
 
 return itemObject

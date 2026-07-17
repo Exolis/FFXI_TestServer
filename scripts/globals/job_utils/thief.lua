@@ -218,9 +218,23 @@ xi.job_utils.thief.useDespoil = function(player, target, ability, action)
 
     local despoiled = target:getDespoilItem()
 
+    if despoiled ~= 0 then
+        local despoiledItem      = GetItemByID(despoiled)
+        local despoiledItemFlags = GetItemFlagsByID(despoiled)
+
+        -- check nil of item, since GetItemFlagsByID can't return nil (but we can't fetch from it yet either)
+        if
+            despoiledItem and
+            bit.band(despoiledItemFlags, xi.itemFlag.RARE) ~= 0 and
+            player:hasItem(despoiled)
+        then
+            despoiled = 0 -- Failed to despoil rare item the player already has
+        end
+    end
+
     if
         target:isMob() and
-        math.random(1, 100) <= despoilChance and
+        math.randomInt(1, 100) <= despoilChance and
         despoiled ~= 0
     then
         if player:getObjType() == xi.objType.TRUST then
@@ -229,14 +243,14 @@ xi.job_utils.thief.useDespoil = function(player, target, ability, action)
             player:addItem(despoiled)
         end
 
-        target:itemDespoiled()
+        target:itemDespoiled(true)
 
         -- Attempt to grab the debuff from the DB
         -- If there isn't a debuff assigned to the item stolen, select one at random
         local debuff = player:getDespoilDebuff(despoiled)
 
         if not debuff then
-            debuff = despoilDebuffs[math.random(#despoilDebuffs)]
+            debuff = despoilDebuffs[math.randomInt(1, #despoilDebuffs)]
         end
 
         local power = processDebuff(player, target, ability, debuff) -- Also sets ability message
@@ -271,7 +285,7 @@ xi.job_utils.thief.useFlee = function(player, target, ability)
 end
 
 xi.job_utils.thief.useHide = function(player, target, ability)
-    local duration = math.random(30, 300)
+    local duration = math.randomInt(30, 300)
 
     duration = duration * (1 + player:getMod(xi.mod.HIDE_DURATION) / 100)
 
@@ -352,13 +366,13 @@ xi.job_utils.thief.useMug = function(player, target, ability, action)
 
     if
         target:isMob() and
-        math.random(1, 100) <= mugChance and
+        math.randomInt(1, 100) <= mugChance and
         target:getMobMod(xi.mobMod.MUG_GIL) > 0
     then
         local purse    = target:getMobMod(xi.mobMod.MUG_GIL)
         local fatpurse = target:getGil()
 
-        gil = fatpurse / (8 + math.random(0, 8))
+        gil = fatpurse / (8 + math.randomInt(0, 8))
 
         if gil == 0 then
             gil = fatpurse / 2
@@ -413,9 +427,23 @@ xi.job_utils.thief.useSteal = function(player, target, ability, action)
         stolen = target:getStealItem()
     end
 
-    if target:isMob() and math.random(1, 100) <= stealChance and stolen ~= 0 then
+    if stolen ~= 0 then
+        local stolenItem      = GetItemByID(stolen)
+        local stolenItemFlags = GetItemFlagsByID(stolen)
+
+        -- check nil of item, since GetItemFlagsByID can't return nil (but we can't fetch from it yet either)
+        if
+            stolenItem and
+            bit.band(stolenItemFlags, xi.itemFlag.RARE) ~= 0 and
+            player:hasItem(stolen)
+        then
+            stolen = 0 -- Failed to steal rare item the player already has
+        end
+    end
+
+    if target:isMob() and math.randomInt(1, 100) <= stealChance and stolen ~= 0 then
         player:addItem(stolen)
-        target:itemStolen()
+        target:itemStolen(true)
         ability:setMsg(xi.msg.basic.STEAL_SUCCESS) -- Item stolen successfully
         target:triggerListener('ITEM_STOLEN', target, player, stolen)
         -- Aura Steal does not trigger on successful item steal
@@ -432,7 +460,7 @@ xi.job_utils.thief.useSteal = function(player, target, ability, action)
         -- local effectStealSuccess = false
         if resist >= 0.25 then
             local auraStealChance = math.min(player:getMerit(xi.merit.AURA_STEAL), 95)
-            if math.random(1, 100) <= auraStealChance then
+            if math.randomInt(1, 100) <= auraStealChance then
                 local targetShadows = target:getMod(xi.mod.UTSUSEMI)
 
                 stolen = player:stealStatusEffect(target)
@@ -456,8 +484,8 @@ xi.job_utils.thief.useSteal = function(player, target, ability, action)
             stolen per merit.
 
             if (effect ~= xi.effect.NONE or stolen ~= 0) and player:getMod(xi.mod.AUGMENTS_AURA_STEAL) > 0 then
-                if math.random(1, 100) <= auraStealChance then
-                    if stolenEffect2 ~= nil and math.random(1, 100) <= auraStealChance then
+                if math.randomInt(1, 100) <= auraStealChance then
+                    if stolenEffect2 ~= nil and math.randomInt(1, 100) <= auraStealChance then
                         player:stealStatusEffect(target)
                     else
                         target:dispelStatusEffect()

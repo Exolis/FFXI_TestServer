@@ -28,7 +28,12 @@
 #include <list>
 #include <string>
 
+//
+// Forward declarations
+//
+
 class CCharEntity;
+
 namespace sol
 {
 
@@ -36,8 +41,14 @@ class state;
 
 }
 
+enum class CommandResult : uint8
+{
+    Success,
+    Failure,
+};
+
 class CCommandHandler
 {
 public:
-    static int32 call(Scheduler& scheduler, sol::state& lua, CCharEntity* PChar, const std::string& commandline);
+    static auto call(Scheduler& scheduler, sol::state& lua, CCharEntity* PChar, const std::string& commandline) -> CommandResult;
 };

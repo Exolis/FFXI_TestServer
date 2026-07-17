@@ -23,8 +23,9 @@ entity.onTrigger = function(player, npc)
                 npc:getAnimation() == xi.anim.CLOSE_DOOR
             then
                 npc:openDoor(8)
-                -- wait 1 second delay goes here
-                brassDoor:openDoor(6)
+                npc:timer(1500, function(npcArg)
+                    brassDoor:openDoor(6)
+                end)
             end
         else
             if
@@ -33,15 +34,16 @@ entity.onTrigger = function(player, npc)
                 npc:getAnimation() == xi.anim.CLOSE_DOOR
             then
                 npc:openDoor(8)
-                -- wait 1 second delay goes here
-                trapDoor:openDoor(6)
+                npc:timer(1500, function(npcArg)
+                    trapDoor:openDoor(6)
+                end)
             end
 
             if
                 player:getCurrentMission(xi.mission.log_id.WINDURST) == xi.mission.id.windurst.TO_EACH_HIS_OWN_RIGHT and
                 player:getMissionStatus(player:getNation()) == 3
             then
-                player:startEvent(43)
+                player:startCutscene(43)
             end
         end
     else

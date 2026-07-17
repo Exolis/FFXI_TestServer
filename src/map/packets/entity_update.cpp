@@ -19,19 +19,15 @@
 ===========================================================================
 */
 
-#include "common/timer.h"
 #include "common/utils.h"
-#include "common/vana_time.h"
 
 #include <cstring>
 
 #include "entity_update.h"
 
-#include "entities/baseentity.h"
-#include "entities/mobentity.h"
-#include "entities/npcentity.h"
-#include "entities/petentity.h"
-#include "entities/trustentity.h"
+#include "entities/base_entity.h"
+#include "entities/mob_entity.h"
+#include "entities/npc_entity.h"
 #include "status_effect_container.h"
 #include "zone.h"
 
@@ -233,7 +229,7 @@ std::string getTransportNPCName(CBaseEntity* PEntity)
     auto strSize    = isElevator ? 10 : 8;
 
     std::string str(strSize, '\0');
-    std::memcpy(str.data() + 0, PEntity->name.data(), PEntity->name.size());
+    std::memcpy(str.data() + 0, PEntity->name.data(), std::min<size_t>(PEntity->name.size(), 4));
 
     auto timestamp = PEntity->GetLocalVar("TransportTimestamp");
     std::memcpy(str.data() + 4, &timestamp, 4);
@@ -298,7 +294,7 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
             {
                 ref<uint8>(0x2A) = 4;
             }
-            if (PEntity->spawnAnimation == SPAWN_ANIMATION::SPECIAL)
+            if (PEntity->spawnAnimation == xi::SpawnAnimation::Special)
             {
                 ref<uint8>(0x28) |= 0x04;
             }
@@ -323,9 +319,9 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
         ref<uint8>(0x1D)  = PEntity->animationSpeed;
     }
 
-    if (PEntity->allegiance == ALLEGIANCE_TYPE::PLAYER && PEntity->status == STATUS_TYPE::UPDATE)
+    if (PEntity->allegiance == xi::Allegiance::Player && PEntity->status == xi::Status::Update)
     {
-        ref<uint8>(0x20) = static_cast<uint8>(STATUS_TYPE::NORMAL);
+        ref<uint8>(0x20) = static_cast<uint8>(xi::Status::Normal);
     }
     else
     {
@@ -345,16 +341,16 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
                 ref<uint8>(0x1F) = PEntity->animation;
                 ref<uint8>(0x2A) |= PEntity->animationsub;
 
-                ref<uint32>(0x21) = PNpc->m_flags;
+                ref<uint32>(0x21) = static_cast<uint32>(PNpc->m_flags);
                 ref<uint8>(0x27)  = PNpc->name_prefix; // gender and something else
 
-                if (PNpc->IsTriggerable())
+                if (PNpc->triggerable())
                 {
                     ref<uint8>(0x28) |= 0x40;
                 }
 
                 ref<uint8>(0x29) = static_cast<uint8>(PEntity->allegiance);
-                ref<uint8>(0x2B) = PEntity->namevis;
+                ref<uint8>(0x2B) = static_cast<uint8>(PEntity->namevis);
             }
 
             // TODO: Unify name logic
@@ -384,14 +380,14 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
                 ref<uint8>(0x1F) = PEntity->animation;
                 ref<uint8>(0x2A) |= PEntity->animationsub;
 
-                ref<uint32>(0x21) = PMob->m_flags;
+                ref<uint32>(0x21) = static_cast<uint32>(PMob->m_flags);
                 ref<uint8>(0x25)  = PMob->health.hp > 0 ? 0x08 : 0;
                 ref<uint8>(0x27)  = PMob->m_name_prefix;
                 if (PMob->PMaster != nullptr && PMob->PMaster->objtype == TYPE_PC)
                 {
                     ref<uint8>(0x27) |= 0x08;
                 }
-                ref<uint8>(0x28) |= PMob->StatusEffectContainer->HasStatusEffect(EFFECT_TERROR) ? 0x10 : 0x00;
+                ref<uint8>(0x28) |= PMob->StatusEffectContainer->HasStatusEffect(xi::StatusEffect::Terror) ? 0x10 : 0x00;
 
                 // Giga hack -- mobs in Pso'Xja for some reason are less "visible"
                 // Set CliPriorityFlag to force them to render on the client if they receive 0x00Es
@@ -403,9 +399,9 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
                 }
 
                 ref<uint8>(0x28) |= PMob->health.hp > 0 && PMob->animation == ANIMATION_DEATH ? 0x08 : 0;
-                ref<uint8>(0x28) |= PMob->status == STATUS_TYPE::NORMAL && PMob->objtype == TYPE_MOB ? 0x40 : 0; // Make the entity triggerable if a mob and normal status
+                ref<uint8>(0x28) |= PMob->status == xi::Status::Normal && PMob->objtype == TYPE_MOB ? 0x40 : 0; // Make the entity triggerable if a mob and normal status
                 ref<uint8>(0x29) = static_cast<uint8>(PEntity->allegiance);
-                ref<uint8>(0x2B) = PEntity->namevis;
+                ref<uint8>(0x2B) = static_cast<uint8>(PEntity->namevis);
             }
 
             // TODO: make flags struct for 0x00E when it's decompped
@@ -593,5 +589,9 @@ void CEntityUpdatePacket::updateWith(CBaseEntity* PEntity, ENTITYUPDATE type, ui
         packet->Flags1.GraphSize = PEntity->modelSize;
         // For some reason, SE reused a player struct where this "g" value is the hitbox size.
         packet->Flags2.g = static_cast<uint8_t>(PEntity->modelHitboxSize * 10);
+
+        // Fenced content ID
+        const uint8 gateId = static_cast<CBattleEntity*>(PEntity)->StatusEffectContainer->GetConfrontationSubPower() & 0x0F;
+        packet->Flags2.b   = (packet->Flags2.b & 0x0F) | (gateId << 4);
     }
 }

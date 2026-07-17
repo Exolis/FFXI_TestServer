@@ -21,13 +21,12 @@
 
 #include "0x0ac_guild_sell.h"
 
-#include "common/database.h"
 #include "common/settings.h"
-#include "entities/charentity.h"
-#include "items/item_shop.h"
-#include "packets/s2c/0x01d_item_same.h"
+#include "entities/char_entity.h"
+#include "lua/luautils.h"
 #include "packets/s2c/0x084_guild_sell.h"
-#include "utils/charutils.h"
+#include "utils/itemutils.h"
+#include "utils/zoneutils.h"
 
 namespace
 {
@@ -61,50 +60,42 @@ auto GP_CLI_COMMAND_GUILD_SELL::validate(MapSession* PSession, const CCharEntity
 {
     return PacketValidator(PChar)
         .blockedBy({ BlockedState::InEvent, BlockedState::Crafting })
-        .mustNotEqual(PChar->PGuildShop, nullptr, "Character does not have a guild shop")
+        .mustNotEqual(PChar->guildShopNpc_.id, 0, "Character does not have a guild shop")
         .range("ItemNum", this->ItemNum, 1, 99);
 }
 
 void GP_CLI_COMMAND_GUILD_SELL::process(MapSession* PSession, CCharEntity* PChar) const
 {
-    uint8       quantity   = this->ItemNum;
-    const uint8 shopSlotId = PChar->PGuildShop->SearchItem(this->ItemNo);
-
-    if (shopSlotId == ERROR_SLOTID)
-    {
-        return;
-    }
-
-    auto*        shopItem  = static_cast<CItemShop*>(PChar->PGuildShop->GetItem(shopSlotId));
-    const CItem* charItem  = PChar->getStorage(LOC_INVENTORY)->GetItem(this->PropertyItemIndex);
-    const uint32 basePrice = shopItem->getBasePrice();
-
-    if (!charItem || charItem->getID() != shopItem->getID())
+    const CItem* PItem = xi::items::lookup(this->ItemNo);
+    if (!PItem)
     {
         ShowWarning("User '%s' attempting to sell an invalid item to guild vendor!", PChar->getName());
         return;
     }
 
-    if (PChar->PGuildShop->GetItem(shopSlotId)->getQuantity() + quantity > PChar->PGuildShop->GetItem(shopSlotId)->getStackSize())
+    // A guild shop never buys more than a single stack of an item per transaction.
+    if (this->ItemNum > PItem->getStackSize())
     {
-        quantity = PChar->PGuildShop->GetItem(shopSlotId)->getStackSize() - PChar->PGuildShop->GetItem(shopSlotId)->getQuantity();
+        PChar->pushPacket<GP_SERV_COMMAND_GUILD_SELL>(PChar, 0, 0, static_cast<uint8>(-4));
+        return;
     }
 
-    // TODO: add all sellable items to guild table
-    if (quantity != 0 && charItem->getQuantity() >= quantity)
+    if (auto* PNpc = zoneutils::GetEntity(PChar->guildShopNpc_.id, TYPE_NPC))
     {
-        if (charutils::UpdateItem(PChar, LOC_INVENTORY, this->PropertyItemIndex, -quantity) == this->ItemNo)
+        const auto result = luautils::callGlobal<sol::table>("xi.guildShops.onPlayerSell", PChar, PNpc, this->ItemNo, this->ItemNum);
+        if (result.valid())
         {
-            // TODO: Don't pass around Scheduler& through PSession
-            auditSale(*PSession->scheduler, PChar, charItem->getID(), basePrice, quantity);
+            const auto itemNo = result.get_or("itemNo", uint16{ 0 });
+            const auto count  = result.get_or("count", uint8{ 0 });
+            const auto trade  = result.get_or("trade", int32{ 0 });
+            const auto sold   = result.get_or("sold", uint8{ 0 });
+            const auto price  = result.get_or("price", uint32{ 0 });
+            PChar->pushPacket<GP_SERV_COMMAND_GUILD_SELL>(PChar, count, itemNo, static_cast<uint8>(trade));
 
-            charutils::UpdateItem(PChar, LOC_INVENTORY, 0, shopItem->getSellPrice() * quantity);
-            ShowInfo("GP_CLI_COMMAND_GUILD_SELL: Player '%s' sold %u of ItemNo %u [to GUILD] ", PChar->getName(), quantity, this->ItemNo);
-            PChar->PGuildShop->GetItem(shopSlotId)->setQuantity(PChar->PGuildShop->GetItem(shopSlotId)->getQuantity() + quantity);
-            PChar->pushPacket<GP_SERV_COMMAND_GUILD_SELL>(
-                PChar, PChar->PGuildShop->GetItem(PChar->PGuildShop->SearchItem(this->ItemNo))->getQuantity(), this->ItemNo, quantity);
-            PChar->pushPacket<GP_SERV_COMMAND_ITEM_SAME>(PChar);
+            if (sold > 0)
+            {
+                auditSale(*PSession->scheduler, PChar, itemNo, price, sold);
+            }
         }
     }
-    // TODO: error messages!
 }

@@ -1,22 +1,9 @@
 -----------------------------------
 -- This global is intended to handle additional effects from item sources of:
 -- melee attacks, ranged attacks, auto-spikes
--- Notes:
--- Ranged versions get bonus from int/mnd, melee does NOT.
--- No matter how much INT you stack that fire sword doesn't hit any harder.
--- No matter how much MND you stack that holy mace doesn't hit any harder.
--- But Ice Arrows and Bloody Bolts will gain damage from INT and Holy bolts will gain damage from MND.
--- Melee weapon proc also do not appear to adjust for level, only resistance.
--- In testing my fire sword had the same damage ranges no matter my level vs same mob.
--- Weakness/resistance to element would swing damage range a lot
--- For status effects is it possible to land on highly resistant mobs because of flooring.
--- Ranged throwing items have weird cases that don't fully fit in the above,
--- and a handfull of weapons have seem to scale up the more magic accuracy you have
--- Yes accuracy, not attack. More research needed. Not adding them till we know how they work.
--- (And then these comments get cleaned up)
 -----------------------------------
-require('scripts/globals/teleports') -- For warp weapon proc.
 require('scripts/globals/magic') -- For resist functions
+require('scripts/globals/teleports') -- For warp weapon proc.
 -----------------------------------
 xi = xi or {}
 xi.additionalEffect = xi.additionalEffect or {}
@@ -97,16 +84,22 @@ xi.additionalEffect.calcDamage = function(attacker, element, defender, damage)
     params.includemab = false -- May possibly need to include mab on case by case basis, further tests needed
     damage            = addBonusesAbility(attacker, element, defender, damage, params)
     damage            = math.floor(damage * applyResistanceAddEffect(attacker, defender, element, 0))
-    damage            = math.floor(damage * xi.spells.damage.calculateAbsorption(defender, element, true))
-    damage            = math.floor(damage * xi.spells.damage.calculateNullification(defender, element, true, false))
-    -- Todo: make sure day/weather/affinity bonuses tie in right here
-    damage            = finalMagicNonSpellAdjustments(attacker, defender, element, damage)
+    damage            = math.floor(damage * xi.spells.damage.calculateAbsorption(defender, element, false, true, false, false))
+    damage            = math.floor(damage * xi.spells.damage.calculateNullification(defender, element, false, true, false, false))
+    damage            = math.floor(damage * xi.combat.damage.calculateDamageAdjustment(defender, false, true, false, false))
+    damage            = math.floor(damage * xi.spells.damage.calculateAbsorption(defender, element, false, true, false, false))
+    damage            = math.floor(damage * xi.spells.damage.calculateNullification(defender, element, false, true, false, false))
+    damage            = math.floor(defender:handleSevereDamage(damage, false))
+    damage            = utils.handlePhalanx(defender, damage)
+    damage            = utils.handleOneForAll(defender, damage)
+    damage            = utils.handleStoneskin(defender, damage)
+    damage            = utils.clamp(damage, -99999, 99999)
 
-    --[[
-    This should rightly be modified by resistance checks, and while those DO they are presently not perfect.
-    If you want to force some extra randomness, un-comment the line below to artificially force 20% variance.
-    ]]
-    -- damage = damage * (math.random(90, 110) / 100)
+    if damage < 0 then
+        damage = -(defender:addHP(-damage))
+    else
+        defender:takeDamage(damage, attacker, xi.attackType.MAGICAL, xi.damageType.ELEMENTAL + element)
+    end
 
     return damage
 end
@@ -123,41 +116,41 @@ xi.additionalEffect.calcPhysDamage = function(attacker, defender, item, params)
     end
 
     -- Check nullification
-    if math.random(1, 100) <= defender:getMod(xi.mod.NULL_DAMAGE) then
+    if math.randomInt(1, 100) <= defender:getMod(xi.mod.NULL_DAMAGE) then
         return 0
     end
 
     if
         params.isPhysical and
-        math.random(1, 100) <= defender:getMod(xi.mod.NULL_PHYSICAL_DAMAGE)
+        math.randomInt(1, 100) <= defender:getMod(xi.mod.NULL_PHYSICAL_DAMAGE)
     then
         return 0
     end
 
     if
         params.isRanged and
-        math.random(1, 100) <= defender:getMod(xi.mod.NULL_RANGED_DAMAGE)
+        math.randomInt(1, 100) <= defender:getMod(xi.mod.NULL_RANGED_DAMAGE)
     then
         return 0
     end
 
     if
         params.isBREATH and
-        math.random(1, 100) <= defender:getMod(xi.mod.NULL_BREATH_DAMAGE)
+        math.randomInt(1, 100) <= defender:getMod(xi.mod.NULL_BREATH_DAMAGE)
     then
         return 0
     end
 
     -- Check absorbs
     -- Absorb: All damage.
-    if math.random(1, 100) <= defender:getMod(xi.mod.ABSORB_DMG_CHANCE) then
+    if math.randomInt(1, 100) <= defender:getMod(xi.mod.ABSORB_DMG_CHANCE) then
         return params.damage * -1
     end
 
     -- Absorb: ranged or phys
     if
         (params.isPhysical or params.isRanged) and
-        math.random(1, 100) <= defender:getMod(xi.mod.PHYS_ABSORB)
+        math.randomInt(1, 100) <= defender:getMod(xi.mod.PHYS_ABSORB)
     then
         return params.damage * -1
     end
@@ -179,7 +172,7 @@ xi.additionalEffect.calcPhysDamage = function(attacker, defender, item, params)
             params.damage = params.damage * (1 + defender:getMod(xi.mod.IMPACT_SDT) / 10000)
         end,
 
-        [xi.damageType.HTH] = function()
+        [xi.damageType.HAND_TO_HAND] = function()
             params.damage = params.damage * (1 + defender:getMod(xi.mod.HTH_SDT) / 10000)
         end,
     }
@@ -467,7 +460,7 @@ xi.additionalEffect.procFunctions[xi.additionalEffect.procType.DEATH] = function
         defender:isNM() or
         defender:isUndead() or
         -- Todo: DeathRes has no place in the resistance functions so far..
-        math.random(1, 100) > defender:getMod(xi.mod.DEATHRES) -- We are checking for a fail, not a success.
+        math.randomInt(1, 100) > defender:getMod(xi.mod.DEATHRES) -- We are checking for a fail, not a success.
     then
         return 0, 0, 0 -- NMs immune or roll failed so return out
     else
@@ -480,7 +473,7 @@ xi.additionalEffect.procFunctions[xi.additionalEffect.procType.DEATH] = function
 end
 
 xi.additionalEffect.procFunctions[xi.additionalEffect.procType.HPMP_DRAIN] = function(attacker, defender, item, params)
-    local drainRoll = math.random(1, 2) -- This is wrong and needs retail verification. Current theory is that it rolls one after another until one doesn't resist or they all resist.
+    local drainRoll = math.randomInt(1, 2) -- This is wrong and needs retail verification. Current theory is that it rolls one after another until one doesn't resist or they all resist.
 
     local drainFuncs =
     {
@@ -492,7 +485,7 @@ xi.additionalEffect.procFunctions[xi.additionalEffect.procType.HPMP_DRAIN] = fun
 end
 
 xi.additionalEffect.procFunctions[xi.additionalEffect.procType.HPMPTP_DRAIN] = function(attacker, defender, item, params)
-    local drainRoll = math.random(1, 3) -- This is wrong and needs retail verification. Current theory is that it rolls one after another until one doesn't resist or they all resist.
+    local drainRoll = math.randomInt(1, 3) -- This is wrong and needs retail verification. Current theory is that it rolls one after another until one doesn't resist or they all resist.
 
     local drainFuncs =
     {
@@ -634,7 +627,7 @@ xi.additionalEffect.attack = function(attacker, defender, baseAttackDamage, item
     end
 
     -- If we're not going to proc, lets not execute all those checks!
-    if math.random(1, 100) > params.chance then
+    if math.randomInt(1, 100) > params.chance then
         return 0, 0, 0
     end
 

@@ -24,8 +24,9 @@ entity.onMobInitialize = function(mob)
     mob:addImmunity(xi.immunity.TERROR)
 
     mob:addListener('TAKE_DAMAGE', 'RAUBAHN_TAKE_DAMAGE', function(mobArg, damage, attacker, attackType, damageType)
-        if damage >= 400 then -- Raubahn uses some sort of stat copy that isn't fully understood after days of testing.  I think it has to do with taking excessive damage.
+        if damage >= 400 then -- This might also increase Raubahn's accuracy.
             mob:messageText(mob, ID.text.RAUBAHN_GREATER_POWER)
+            mob:setMobMod(xi.mobMod.BASE_DAMAGE_MULTIPLIER, 150)
         end
     end)
 end
@@ -36,11 +37,10 @@ entity.onMobSpawn = function(mob)
     mob:setMod(xi.mod.UFASTCAST, 70)
     mob:setMobMod(xi.mobMod.ROAM_COOL, 8)
     mob:setMobMod(xi.mobMod.MAGIC_COOL, 18)
-    mob:setMobMod(xi.mobMod.BASE_DAMAGE_MULTIPLIER, 150)
 
     -- Reset mob.
     xi.combat.behavior.enableAllActions(mob)
-    mob:setLocalVar('[2hour]HPP', math.random(50, 90))
+    mob:setLocalVar('[2hour]HPP', math.randomInt(50, 90))
     mob:setLocalVar('[2hour]Used', 0)
     mob:setLocalVar('initialTaunt', 0)
     mob:setLocalVar('talkTime', 0)
@@ -148,7 +148,7 @@ entity.onSpellCastStart = function(mob, target, spell)
     }
 
     if mob:isEngaged() then
-        mob:showText(mob, spellMessage[math.random(1, #spellMessage)])
+        mob:showText(mob, spellMessage[math.randomInt(1, #spellMessage)])
     end
 end
 
@@ -227,7 +227,7 @@ entity.onMobMobskillChoose = function(mob, target, skillId)
         table.insert(tpTable, xi.mobSkill.SAVAGE_BLADE_1)
     end
 
-    return tpTable[math.random(1, #tpTable)]
+    return tpTable[math.randomInt(1, #tpTable)]
 end
 
 entity.onMobWeaponSkill = function(mob, target, skill, action)

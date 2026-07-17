@@ -7,7 +7,7 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     local check = 56
     if target:getMainLvl() >= 20 then
         check = 0
@@ -17,7 +17,7 @@ itemObject.onItemCheck = function(target, item, param, caster)
 end
 
 itemObject.onItemUse = function(target)
-    target:addExp(xi.settings.main.EXP_RATE * math.random(750, 1500))
+    target:addExp(xi.settings.main.EXP_RATE * math.randomInt(750, 1500))
 end
 
 return itemObject

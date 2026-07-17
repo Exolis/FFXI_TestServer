@@ -23,9 +23,8 @@
 #define _CWEAPONSKILL_H
 
 #include "common/cbasetypes.h"
-#include "common/mmo.h"
 
-#include "entities/battleentity.h"
+#include "entities/battle_entity.h"
 #include "enums/action/animation.h"
 
 #define MAX_WEAPONSKILL_ID 256

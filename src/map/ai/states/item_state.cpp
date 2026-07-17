@@ -21,9 +21,11 @@
 
 #include "item_state.h"
 
+#include "enums/four_cc.h"
+
 #include "ai/ai_container.h"
-#include "entities/battleentity.h"
-#include "entities/charentity.h"
+#include "entities/battle_entity.h"
+#include "entities/char_entity.h"
 
 #include "action/action.h"
 #include "action/interrupts.h"
@@ -99,7 +101,7 @@ CItemState::CItemState(CCharEntity* PEntity, const uint16 targid, const uint8 lo
         }
     }
 
-    auto [error, param, value] = luautils::OnItemCheck(PTarget, m_PItem, ITEMCHECK::NONE, m_PEntity);
+    auto [error, param, value] = luautils::OnItemCheck(PTarget, m_PItem, m_PEntity);
     if (error || m_PEntity->StatusEffectContainer->HasPreventActionEffect())
     {
         if (error == -1)
@@ -124,17 +126,24 @@ CItemState::CItemState(CCharEntity* PEntity, const uint16 targid, const uint8 lo
     m_castTime      = m_PItem->getActivationTime();
     m_animationTime = m_PItem->getAnimationTime();
 
+    auto targetID = PTarget->id;
+
+    if (m_PEntity->objtype != TYPE_PC && settings::get<bool>("map.HIDE_READIES_TARGET"))
+    {
+        targetID = m_PEntity->id;
+    }
+
     action_t action{
         .actorId    = m_PEntity->id,
         .actiontype = ActionCategory::ItemStart,
         .actionid   = static_cast<uint32_t>(FourCC::ItemUse),
         .targets    = {
             {
-                   .actorId = PTarget->id,
-                   .results = {
+                .actorId = targetID,
+                .results = {
                     {
-                           .param     = m_PItem->getID(),
-                           .messageID = MsgBasic::ItemUse,
+                        .param     = m_PItem->getID(),
+                        .messageID = MsgBasic::ItemUse,
                     },
                 },
             },

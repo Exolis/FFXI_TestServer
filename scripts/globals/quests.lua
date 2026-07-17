@@ -111,7 +111,7 @@ xi.quest.id =
         TEA_WITH_A_TONBERRY             = 109, -- + Converted
         SPICE_GALS                      = 110, -- + Converted
         OVER_THE_HILLS_AND_FAR_AWAY     = 112, -- +
-        LURE_OF_THE_WILDCAT             = 113, -- +
+        LURE_OF_THE_WILDCAT             = 113, -- + Converted
         ATELLOUNES_LAMENT               = 114, -- + Converted
         THICK_SHELLS                    = 117, -- +
         FOREST_FOR_THE_TREES            = 118,
@@ -714,7 +714,7 @@ xi.quest.id =
         THE_DAWN_OF_DELECTABILITY        = 5,  -- + Converted
         A_LITTLE_KNOWLEDGE               = 6,  -- + Converted
         THE_FIGHTING_FOURTH              = 7,  -- + Converted
-        SNAKE_ON_THE_PLAINS              = 8,  -- +
+        SNAKE_ON_THE_PLAINS              = 8,  -- + Converted
         STEAMED_RAMS                     = 9,  -- + Converted
         SEEING_SPOTS                     = 10, -- + Converted
         THE_FLIPSIDE_OF_THINGS           = 11, -- + Converted
@@ -723,8 +723,8 @@ xi.quest.id =
         HAMMERING_HEARTS                 = 14, -- + Converted
         GIFTS_OF_THE_GRIFFON             = 15, -- + Converted
         CLAWS_OF_THE_GRIFFON             = 16, -- + Converted
-        THE_TIGRESS_STIRS                = 17, -- +
-        THE_TIGRESS_STRIKES              = 18,
+        THE_TIGRESS_STIRS                = 17, -- + Converted
+        THE_TIGRESS_STRIKES              = 18, -- + Converted
         LIGHT_IN_THE_DARKNESS            = 19, -- + Converted
         BURDEN_OF_SUSPICION              = 20,
         EVIL_AT_THE_INLET                = 21,
@@ -1083,7 +1083,7 @@ xi.quest.id =
         A_THIRST_FOR_THE_EONS            = 115,
         A_THIRST_FOR_ETERNITY            = 116,
         A_THIRST_BEFORE_TIME             = 117,
-        DANCES_WITH_LUOPANS              = 118,
+        DANCES_WITH_LUOPANS              = 118, -- + Converted
         CHILDREN_OF_THE_RUNE             = 119,
         FLOWERS_FOR_SVENJA               = 120,
         THORN_IN_THE_SIDE                = 121,
@@ -1247,7 +1247,7 @@ xi.quest.setLocalVar = function(player, areaId, questId, name, value)
 end
 
 xi.quest.getMustZone = function(player, areaId, questId)
-    return player:setCharVar(getVarPrefix(areaId, questId) .. 'mustZone') ~= 0 and true or false
+    return player:getCharVar(getVarPrefix(areaId, questId) .. 'mustZone') ~= 0 and true or false
 end
 
 xi.quest.setMustZone = function(player, areaId, questId)

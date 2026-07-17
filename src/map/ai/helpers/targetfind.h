@@ -24,7 +24,7 @@
 
 #include "common/cbasetypes.h"
 #include "common/mmo.h"
-#include "entities/baseentity.h"
+#include "entities/base_entity.h"
 
 #include <vector>
 
@@ -108,7 +108,7 @@ public:
     void addAllInParty(CBattleEntity* PTarget, bool withPet);
     void addAllInMobList(CBattleEntity* PTarget, bool withPet);
     void addAllInEnmityList();
-    void addAllInRange(CBattleEntity* PTarget, float radius, ALLEGIANCE_TYPE allegiance);
+    void addAllInRange(CBattleEntity* PTarget, float radius, xi::Allegiance allegiance);
     void addEntity(CBattleEntity* PTarget, bool withPet);
 
     // helpers

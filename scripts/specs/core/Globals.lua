@@ -27,6 +27,18 @@ function GetItemByID(itemId)
 end
 
 ---@nodiscard
+---@param itemId xi.item
+---@return number
+function GetItemFlagsByID(itemId)
+end
+
+---@nodiscard
+---@param itemId xi.item
+---@return number
+function GetItemLevelRequirementsByID(itemId)
+end
+
+---@nodiscard
 ---@param npcid integer
 ---@param instanceObj CInstance?
 ---@return CBaseEntity?
@@ -156,6 +168,62 @@ end
 ---@nodiscard
 ---@return integer
 function GetSystemTime()
+end
+
+---@class LinkshellConciergeSlotRow
+---@field slotIndex integer
+---@field linkshellid integer
+---@field ownerCharId integer
+---@field groupKey integer
+---@field flag integer
+---@field lang integer
+---@field membersGoal integer
+---@field activeTier integer
+---@field characteristics integer
+---@field tz integer
+---@field days integer
+---@field times integer
+---@field postedDate integer
+---@field name string
+---@field color integer
+
+---@class LinkshellConciergeSlotData
+---@field linkshellid integer
+---@field ownerCharId integer
+---@field groupKey integer
+---@field flag integer
+---@field lang integer
+---@field membersGoal integer
+---@field activeTier integer
+---@field characteristics integer
+---@field tz integer
+---@field days integer
+---@field times integer
+---@field postedDate integer
+
+---@nodiscard
+---@param zoneId integer
+---@return LinkshellConciergeSlotRow[]
+function LoadLinkshellConciergeSlots(zoneId)
+end
+
+---@param zoneId integer
+---@param slotIndex integer
+---@param data LinkshellConciergeSlotData
+---@return nil
+function SetLinkshellConciergeSlot(zoneId, slotIndex, data)
+end
+
+---@param zoneId integer
+---@param slotIndex integer
+---@return nil
+function DeleteLinkshellConciergeSlot(zoneId, slotIndex)
+end
+
+---@param zoneId integer
+---@param linkshellid integer
+---@return nil
+function DecrementLinkshellConciergeMembersGoal(zoneId, linkshellid)
 end
 
 ---@nodiscard
@@ -451,4 +519,42 @@ end
 
 --@return nil
 function InitializeFishingContestSystem()
+end
+
+-- Generates a normally distributed number (mean, standard deviation). Optional
+-- bounds truncate the distribution to [lower, upper] exactly, with no rejection
+-- sampling; pass nil for lower to set only an upper bound.
+-- Examples:
+-- math.randomNormal(3.5, 1.5)         : No bounds.
+-- math.randomNormal(3.5, 1.5, 2, 7)   : Truncated to [2, 7].
+-- math.randomNormal(3.5, 1.5, 0)      : Lower bound 0, no upper bound.
+-- math.randomNormal(3.5, 1.5, nil, 7) : No lower bound, upper bound 7.
+---@nodiscard
+---@param mean number
+---@param stddev number Standard deviation; values <= 0 collapse the distribution to mean.
+---@param lower number? Optional lower bound.
+---@param upper number? Optional upper bound.
+---@return number
+function math.randomNormal(mean, stddev, lower, upper)
+end
+
+-- Generates a pseudo-random integer in [lower, upper] (both endpoints inclusive).
+-- Identical to math.random(lower, upper), but explicit about its semantics at the
+-- call site. Fractional bounds are rounded to the nearest integer.
+---@nodiscard
+---@param lower number
+---@param upper number
+---@return integer
+function math.randomInt(lower, upper)
+end
+
+-- Generates a pseudo-random double in [lower, upper) (half-open), regardless of
+-- whether the bounds are whole numbers. This is the only way to request a float
+-- range with whole-number bounds: math.random(2.0, 7.0) rolls integers, because
+-- LuaJIT cannot tell 7.0 from 7.
+---@nodiscard
+---@param lower number
+---@param upper number
+---@return number
+function math.randomFloat(lower, upper)
 end

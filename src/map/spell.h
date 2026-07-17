@@ -22,13 +22,16 @@
 #pragma once
 
 #include "common/cbasetypes.h"
-#include "entities/battleentity.h"
+#include "data/enums/skill_type.h"
+#include "data/enums/zone_misc.h"
+#include "entities/battle_entity.h"
 
 #define CANNOT_USE_SPELL 0
 
 enum class ActionAnimation : uint16_t;
 enum class ActionModifier : uint32_t;
 enum class FourCC : uint32_t;
+
 enum SPELLGROUP
 {
     SPELLGROUP_NONE      = 0,
@@ -1036,6 +1039,128 @@ enum class SpellID : uint16
     Full_Cure             = 893,
     Refresh_III           = 894,
     Temper_II             = 895,
+    Shantotto             = 896,
+    Naji                  = 897,
+    Kupipi                = 898,
+    Excenmille            = 899,
+    Ayame                 = 900,
+    Nanaa_Mihgo           = 901,
+    Curilla               = 902,
+    Volker                = 903,
+    Ajido_Marujido        = 904,
+    Trion                 = 905,
+    Zeid                  = 906,
+    Lion                  = 907,
+    Tenzen                = 908,
+    Mihli_Aliapoh         = 909,
+    Valaineral            = 910,
+    Joachim               = 911,
+    Naja_Salaheem         = 912,
+    Prishe                = 913,
+    Ulmia                 = 914,
+    Shikaree_Z            = 915,
+    Cherukiki             = 916,
+    Iron_Eater            = 917,
+    Gessho                = 918,
+    Gadalar               = 919,
+    Rainemard             = 920,
+    Ingrid                = 921,
+    Lehko_Habhoka         = 922,
+    Nashmeira             = 923,
+    Zazarg                = 924,
+    Ovjang                = 925,
+    Mnejing               = 926,
+    Sakura                = 927,
+    Luzaf                 = 928,
+    Najelith              = 929,
+    Aldo                  = 930,
+    Moogle                = 931,
+    Fablinix              = 932,
+    Maat                  = 933,
+    Domina_Shantotto      = 934,
+    Star_Sibyl            = 935,
+    Karaha_Baruha         = 936,
+    Cid                   = 937,
+    Gilgamesh             = 938,
+    Areuhat               = 939,
+    Semih_Lafihna         = 940,
+    Elivira               = 941,
+    Noillurie             = 942,
+    Lhu_Mhakaracca        = 943,
+    Ferreous_Coffin       = 944,
+    Lilisette             = 945,
+    Mumor                 = 946,
+    Uka_Totlihn           = 947,
+    Klara                 = 948,
+    Romaa_Mihgo           = 949,
+    Kuyin_Hathdenna       = 950,
+    Rahal                 = 951,
+    Koru_Moru             = 952,
+    Pieuje_UC             = 953,
+    Invincible_Shield_UC  = 954,
+    Apururu_UC            = 955,
+    Jakoh_UC              = 956,
+    Flaviria_UC           = 957,
+    Babban                = 958,
+    Abenzio               = 959,
+    Rughadjeen            = 960,
+    Kukki_Chebukki        = 961,
+    Margret               = 962,
+    Chacharoon            = 963,
+    Lhe_Lhangavo          = 964,
+    Arciela               = 965,
+    Mayakov               = 966,
+    Qultada               = 967,
+    Adelheid              = 968,
+    Amchuchu              = 969,
+    Brygid                = 970,
+    Mildaurion            = 971,
+    Halver                = 972,
+    Rongelouts            = 973,
+    Leonoyne              = 974,
+    Maximilian            = 975,
+    Kayeel_Payeel         = 976,
+    Robel_Akbel           = 977,
+    Kupofried             = 978,
+    Selhteus              = 979,
+    Yoran_Oran_UC         = 980,
+    Sylvie_UC             = 981,
+    Abquhbah              = 982,
+    Balamor               = 983,
+    August                = 984,
+    Rosulatia             = 985,
+    Teodor                = 986,
+    Ullegore              = 987,
+    Makki_Chebukki        = 988,
+    King_Of_Hearts        = 989,
+    Morimar               = 990,
+    Darrcuiln             = 991,
+    Aahm                  = 992,
+    Aaev                  = 993,
+    Aamr                  = 994,
+    Aatt                  = 995,
+    Aagk                  = 996,
+    Iroha                 = 997,
+    Ygnas                 = 998,
+    Monberaux             = 999,
+
+    Cornelia              = 1002,
+    Matsui_P              = 1003,
+    Excenmille_S          = 1004,
+    Ayame_UC              = 1005,
+    Maat_UC               = 1006,
+    Aldo_UC               = 1008,
+    Lion_II               = 1009,
+    Zeid_II               = 1010,
+    Prishe_II             = 1011,
+    Nashmeira_II          = 1012,
+    Lilisette_II          = 1013,
+    Tenzen_II             = 1014,
+    Mumor_II              = 1015,
+    Ingrid_II             = 1016,
+    Arciela_II            = 1017,
+    Iroha_II              = 1018,
+    Shantotto_II          = 1019,
 };
 // clang-format on
 
@@ -1064,8 +1189,8 @@ public:
     timer::duration    getAnimationTime() const;
     auto               getSpellGroup() const -> SPELLGROUP;
     SPELLFAMILY        getSpellFamily();
-    uint8              getSkillType() const;
-    uint16             getZoneMisc() const;
+    auto               getSkillType() const -> xi::SkillType;
+    xi::ZoneMisc       getZoneMisc() const;
     uint8              getAOE() const;
     uint16             getBase() const;
     uint16             getElement() const;
@@ -1104,8 +1229,8 @@ public:
     void setAnimationTime(timer::duration AnimationTime);
     void setSpellGroup(SPELLGROUP SpellGroup);
     void setSpellFamily(SPELLFAMILY SpellFamily);
-    void setSkillType(uint8 SkillType);
-    void setZoneMisc(uint16 Misc);
+    void setSkillType(xi::SkillType SkillType);
+    void setZoneMisc(xi::ZoneMisc Misc);
     void setAOE(uint8 AOE);
     void setBase(uint16 base);
     void setElement(uint16 element);
@@ -1141,7 +1266,7 @@ private:
     timer::duration                m_recastTime{};      // recast time
     uint16                         m_animation{};       // animation for spell
     timer::duration                m_animationTime{};
-    uint8                          m_skillType{};
+    xi::SkillType                  m_skillType{};
     float                          m_range{};
     float                          m_radius{};
     uint16                         m_totalTargets{};
@@ -1150,7 +1275,7 @@ private:
     uint16                         m_ValidTarget{};                   // target pc/npc/both
     SPELLGROUP                     m_spellGroup{ SPELLGROUP_NONE };   // spellgroup
     SPELLFAMILY                    m_spellFamily{ SPELLFAMILY_NONE }; // spell family
-    uint16                         m_zoneMisc{};                      // spellcasting conditions
+    xi::ZoneMisc                   m_zoneMisc{};                      // spellcasting conditions
     uint8                          m_AOE{};                           // aoe or single target spell
     uint16                         m_base{};                          // spell base damage
     float                          m_multiplier{};                    // multiplier for upper tier spells

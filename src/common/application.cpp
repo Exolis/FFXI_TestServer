@@ -27,7 +27,6 @@
 #include "logging.h"
 #include "lua.h"
 #include "settings.h"
-#include "xirand.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -42,29 +41,6 @@
 
 namespace
 {
-
-void handleSignal(const std::error_code& error, int signal)
-{
-    switch (signal)
-    {
-#ifdef _WIN32
-        case SIGBREAK:
-#endif // _WIN32
-        case SIGINT:
-        case SIGTERM:
-            std::exit(0);
-#ifndef _WIN32
-        case SIGABRT:
-        case SIGSEGV:
-        case SIGFPE:
-        case SIGILL:
-            break;
-#endif
-        default:
-            std::cerr << fmt::format("Unhandled signal: {}\n", signal);
-            break;
-    }
-}
 
 #ifdef _WIN32
 unsigned long prevQuickEditMode;
@@ -120,6 +96,31 @@ void Application::trySetConsoleTitle()
 #endif
 }
 
+void Application::handleSignal(const std::error_code& error, int signal)
+{
+    switch (signal)
+    {
+#ifdef _WIN32
+        case SIGBREAK:
+#endif // _WIN32
+        case SIGINT:
+        case SIGTERM:
+            // Shut down gracefully so main() unwinds and the engine's destructor runs.
+            requestExit();
+            break;
+#ifndef _WIN32
+        case SIGABRT:
+        case SIGSEGV:
+        case SIGFPE:
+        case SIGILL:
+            break;
+#endif
+        default:
+            std::cerr << fmt::format("Unhandled signal: {}\n", signal);
+            break;
+    }
+}
+
 void Application::registerSignalHandlers()
 {
     signals_.add(SIGINT);
@@ -133,7 +134,11 @@ void Application::registerSignalHandlers()
     signals_.add(SIGXFSZ);
     signals_.add(SIGPIPE);
 #endif
-    signals_.async_wait(&handleSignal);
+    signals_.async_wait(
+        [this](const std::error_code& error, int signal)
+        {
+            handleSignal(error, signal);
+        });
 }
 
 void Application::usercheck() const
@@ -214,7 +219,9 @@ void Application::prepareLogging()
 
 void Application::markLoaded()
 {
-    ShowInfoFmt("The {}-server is ready to work...", serverName_);
+    const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - startTime_).count();
+
+    ShowInfoFmt("The {}-server is ready to work after {:.2f} seconds...", serverName_, elapsed);
     ShowInfoFmt("Type 'help' for a list of available commands.");
     ShowInfoFmt("=======================================================================");
 
@@ -249,7 +256,7 @@ auto Application::isRunningInCI() const -> bool
     return args_->get<bool>("--ci");
 }
 
-void Application::run()
+auto Application::run() -> bool
 {
     ShowInfo("Creating engine");
     engine_ = createEngine();
@@ -284,13 +291,21 @@ void Application::run()
         catch (std::exception& e)
         {
             ShowErrorFmt("Fatal exception: {}", e.what());
+            return false;
         }
     }
+
+    return true;
 }
 
 auto Application::scheduler() -> Scheduler&
 {
     return scheduler_;
+}
+
+auto Application::zmqService() -> ZMQService&
+{
+    return zmqService_;
 }
 
 auto Application::args() const -> Arguments&

@@ -21,9 +21,7 @@
 
 #include "0x034_eventnum.h"
 
-#include <cstring>
-
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 #include "event_info.h"
 
 GP_SERV_COMMAND_EVENTNUM::GP_SERV_COMMAND_EVENTNUM(const CCharEntity* PChar, const EventInfo* eventInfo)

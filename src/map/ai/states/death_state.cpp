@@ -22,11 +22,10 @@
 #include "death_state.h"
 
 #include "ai/ai_container.h"
-#include "entities/battleentity.h"
-#include "entities/charentity.h"
-#include "entities/mobentity.h"
+#include "entities/battle_entity.h"
+#include "entities/char_entity.h"
+#include "entities/mob_entity.h"
 #include "packets/s2c/0x0f9_res.h"
-#include "status_effect.h"
 #include "status_effect_container.h"
 
 namespace
@@ -42,7 +41,7 @@ CDeathState::CDeathState(CBattleEntity* PEntity, timer::duration death_time)
 , m_deathTime(death_time)
 , m_raiseTime(GetEntryTime() + TIME_TO_SEND_RERAISE_MENU)
 {
-    m_PEntity->StatusEffectContainer->DelStatusEffectsByFlag(EFFECTFLAG_DEATH, EffectNotice::Silent);
+    m_PEntity->StatusEffectContainer->DelStatusEffectsByFlag(xi::StatusEffectFlag::Death, EffectNotice::Silent);
 
     m_PEntity->animation = ANIMATION_DEATH;
     m_PEntity->updatemask |= UPDATE_HP;
@@ -67,7 +66,7 @@ bool CDeathState::Update(timer::time_point tick)
             {
                 auto* PMob = dynamic_cast<CMobEntity*>(m_PEntity);
                 // RAISABLE mobs should stay in death state indefinitely until raised
-                if (PMob && (PMob->m_Behavior & BEHAVIOR_RAISABLE))
+                if (PMob && ((PMob->m_Behavior & xi::Behavior::Raisable) != xi::Behavior::None))
                 {
                     return false;
                 }

@@ -1,4 +1,13 @@
 set(COMMON_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/channel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/endpoint.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/endpoint.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/router_endpoint.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/router_endpoint.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/dealer_endpoint.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/dealer_endpoint.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/zmq_service.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/zmq/zmq_service.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/application.h
     ${CMAKE_CURRENT_SOURCE_DIR}/arguments.cpp
@@ -6,10 +15,40 @@ set(COMMON_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/blowfish.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/blowfish.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cbasetypes.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/enum_traits.h
     ${CMAKE_CURRENT_SOURCE_DIR}/console_service.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/console_service.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/database.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/database.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/active_database.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/binding.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/blob.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/blob.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/bound_value.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/caching_database.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/caching_database.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/connection.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/database.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/database.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/prepared_statement.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/query_validation.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/result_set.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/result_set.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/traits.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_connection.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_connection.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_include.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_database.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_database.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_prepared_statement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_prepared_statement.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_result_set.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/database/libmariadb/libmariadb_result_set.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/types/error_or.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/types/flat_hash_map.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/types/hash_map.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/types/heap.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/types/maybe.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/types/variant.h
     ${CMAKE_CURRENT_SOURCE_DIR}/debug.h
     $<$<PLATFORM_ID:Linux>:${CMAKE_CURRENT_SOURCE_DIR}/debug_linux.cpp>
     $<$<PLATFORM_ID:Darwin>:${CMAKE_CURRENT_SOURCE_DIR}/debug_osx.cpp>
@@ -19,10 +58,14 @@ set(COMMON_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/engine.h
     ${CMAKE_CURRENT_SOURCE_DIR}/filewatcher.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/filewatcher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ipp_message.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ipp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ipp.h
     ${CMAKE_CURRENT_SOURCE_DIR}/logging.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/logging.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/logging_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/logging_context.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/logging_json.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lua.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lua.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/md52.cpp

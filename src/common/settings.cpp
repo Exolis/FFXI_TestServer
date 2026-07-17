@@ -23,7 +23,6 @@
 
 #include "logging.h"
 #include "lua.h"
-#include "tracy.h"
 #include "utils.h"
 
 #include <filesystem>
@@ -34,7 +33,14 @@
 namespace settings
 {
 
-std::unordered_map<std::string, SettingsVariant> settingsMap;
+SettingsMap settingsMap;
+
+namespace detail
+{
+
+std::atomic<uint64_t> generation{ 0 };
+
+} // namespace detail
 
 // We need this to figure out which environment variables are numbers
 // so we can pass them to the lua settings properly typed.
@@ -51,11 +57,11 @@ bool isNumber(const std::string& stringValue)
     return true;
 }
 
-/**
- * @brief
- * Load the settings Lua files found in <root>/settings/. Default settings are loaded first from <root>/settings/default/,
- * and are then replaced by the settings found in <root>/settings/, if any.
- */
+//
+// @brief
+// Load the settings Lua files found in <root>/settings/. Default settings are loaded first from <root>/settings/default/,
+// and are then replaced by the settings found in <root>/settings/, if any.
+//
 void init()
 {
     // Load defaults
@@ -104,7 +110,9 @@ void init()
         for (const auto& [innerKeyObj, innerValObj] : outerValObj.as<sol::table>())
         {
             auto innerKey = innerKeyObj.as<std::string>();
-            auto key      = to_upper(fmt::format("{}.{}", outerKey, innerKey));
+            // Stored verbatim: settings::get is case-sensitive, and call sites use the
+            // conventional "<file>.<SETTING_NAME>" casing, so the key must match exactly.
+            auto key = fmt::format("{}.{}", outerKey, innerKey);
 
             if (innerValObj.is<bool>())
             {
@@ -169,7 +177,9 @@ void init()
         for (const auto& [innerKeyObj, innerValObj] : outerValObj.as<sol::table>())
         {
             auto innerKey = innerKeyObj.as<std::string>();
-            auto key      = to_upper(fmt::format("{}.{}", outerKey, innerKey));
+            // Stored verbatim: settings::get is case-sensitive, and call sites use the
+            // conventional "<file>.<SETTING_NAME>" casing, so the key must match exactly.
+            auto key = fmt::format("{}.{}", outerKey, innerKey);
 
             if (innerValObj.is<bool>())
             {
@@ -210,14 +220,22 @@ void init()
         }
     }
 
-    // Push the consolidated defaults + user settings back up into xi.settings
+    // Push the consolidated defaults + user settings back up into xi.settings.
+    // Push the held alternative, not the variant itself: sol only auto-unwraps
+    // std::variant exactly, and SettingsVariant is our derived Variant - assigning
+    // it directly would land in Lua as opaque userdata.
     for (const auto& [key, value] : settingsMap)
     {
-        auto parts                          = split(key, ".");
-        auto outer                          = to_lower(parts[0]);
-        auto inner                          = to_upper(parts[1]);
-        lua["xi"]["settings"][outer][inner] = value;
+        auto parts = split(key, ".");
+        auto outer = to_lower(parts[0]);
+        auto inner = to_upper(parts[1]);
+        value.visit([&](const auto& held)
+                    {
+                        lua["xi"]["settings"][outer][inner] = held;
+                    });
     }
+
+    detail::generation.fetch_add(1, std::memory_order_release);
 
     logging::SetPattern(get<std::string>("logging.PATTERN"));
 
@@ -227,7 +245,7 @@ void init()
     // lua.safe_script("require('settings/main'); require('settings/default/main'); print(xi.settings)");
 }
 
-void visit(const xi::Fn<void(std::string, SettingsVariant)>& visitor)
+void visit(const Fn<void(std::string, SettingsVariant) const>& visitor)
 {
     for (auto& [key, value] : settingsMap)
     {

@@ -6,12 +6,12 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     return 0
 end
 
 itemObject.onItemUse = function(target)
-    local mpHeal = math.random(60, 85)
+    local mpHeal = math.randomInt(60, 85)
     local dif = target:getMaxMP() - target:getMP()
     if mpHeal > dif then
         mpHeal = dif

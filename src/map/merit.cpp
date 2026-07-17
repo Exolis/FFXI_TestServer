@@ -20,9 +20,8 @@
 */
 
 #include "merit.h"
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 
-#include "map_engine.h"
 #include "packets/s2c/0x0aa_magic_data.h"
 #include "packets/s2c/0x0ac_command_data.h"
 #include "utils/charutils.h"

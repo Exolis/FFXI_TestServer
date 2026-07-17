@@ -10,10 +10,9 @@
 -- applications of damage mods ('Damage varies with TP.')
 -- performance of the actual WS (rand numbers, etc)
 -----------------------------------
-require('scripts/globals/magicburst')
 require('scripts/globals/ability')
 require('scripts/globals/magic')
-require('scripts/globals/combat/physical_utilities')
+require('scripts/globals/spells/damage_spell')
 -----------------------------------
 xi = xi or {}
 xi.weaponskills = xi.weaponskills or {}
@@ -23,7 +22,7 @@ local function shadowAbsorb(target)
     local shadowType    = xi.mod.UTSUSEMI
 
     if targetShadows == 0 then
-        if math.random(1, 100) <= 80 then
+        if math.randomInt(1, 100) <= 80 then
             targetShadows = target:getMod(xi.mod.BLINK)
             shadowType    = xi.mod.BLINK
         end
@@ -75,15 +74,15 @@ local function getMultiAttacks(attacker, target, wsParams, firstHit, offHand)
     -- The logic here wasnt actually checking for the augment.
     -- Also, it was in a completely different scale, making triple attack trigger always.
 
-    if math.random(1, 100) <= quadRate then
+    if math.randomInt(1, 100) <= quadRate then
         bonusHits = bonusHits + 3
-    elseif math.random(1, 100) <= tripleRate then
+    elseif math.randomInt(1, 100) <= tripleRate then
         bonusHits = bonusHits + 2
-    elseif math.random(1, 100) <= doubleRate then
+    elseif math.randomInt(1, 100) <= doubleRate then
         bonusHits = bonusHits + 1
-    elseif firstHit and math.random(1, 100) <= oaThriceRate then -- Can only proc on first hit
+    elseif firstHit and math.randomInt(1, 100) <= oaThriceRate then -- Can only proc on first hit
         bonusHits = bonusHits + 2
-    elseif firstHit and math.random(1, 100) <= oaTwiceRate then  -- Can only proc on first hit
+    elseif firstHit and math.randomInt(1, 100) <= oaTwiceRate then  -- Can only proc on first hit
         bonusHits = bonusHits + 1
     end
 
@@ -129,7 +128,7 @@ local function getSingleHitDamage(attacker, target, dmg, ftp, wsParams, calcPara
     -- evade > parry > shadow/blink > guard/block
 
     -- check evasion
-    local missChance = math.random()
+    local missChance = math.randomFloat(0, 1)
     if
         (missChance > calcParams.hitRate and
         not calcParams.guaranteedHit) or
@@ -160,7 +159,7 @@ local function getSingleHitDamage(attacker, target, dmg, ftp, wsParams, calcPara
         return hitDamage, calcParams
     end
 
-    local critChance = math.random() -- See if we land a critical hit
+    local critChance = math.randomFloat(0, 1) -- See if we land a critical hit
     criticalHit = (wsParams.critVaries and critChance <= calcParams.critRate) or
         calcParams.forcedFirstCrit or
         calcParams.mightyStrikesApplicable
@@ -226,7 +225,7 @@ local function modifyMeleeHitDamage(attacker, target, attackTbl, wsParams, rawDa
     adjustedDamage = adjustedDamage + xi.combat.damage.souleaterAddition(attacker)
 
     adjustedDamage = utils.handlePhalanx(target, adjustedDamage)
-    adjustedDamage = utils.handleStoneskin(target, adjustedDamage)
+    adjustedDamage = utils.handleStoneskin(target, adjustedDamage, xi.attackType.PHYSICAL)
 
     return adjustedDamage
 end
@@ -252,8 +251,8 @@ local function calculateHybridMagicDamage(tp, physicaldmg, attacker, target, wsP
     magicdmg = math.floor(target:handleSevereDamage(magicdmg, false))
 
     if magicdmg > 0 then
-        magicdmg = math.floor(magicdmg * xi.spells.damage.calculateAbsorption(target, wsParams.ele, true))
-        magicdmg = math.floor(magicdmg * xi.spells.damage.calculateNullification(target, wsParams.ele, true, false))
+        magicdmg = math.floor(magicdmg * xi.spells.damage.calculateAbsorption(target, wsParams.ele, false, true, false, false))
+        magicdmg = math.floor(magicdmg * xi.spells.damage.calculateNullification(target, wsParams.ele, false, true, false, false))
     end
 
     if magicdmg > 0 then -- handle nonzero damage if previous function does not absorb or nullify
@@ -891,8 +890,8 @@ xi.weaponskills.doMagicWeaponskill = function(attacker, target, wsID, wsParams, 
             return dmg
         end
 
-        dmg = dmg * xi.spells.damage.calculateAbsorption(target, wsParams.ele, true)
-        dmg = dmg * xi.spells.damage.calculateNullification(target, wsParams.ele, true, false)
+        dmg = dmg * xi.spells.damage.calculateAbsorption(target, wsParams.ele, false, true, false, false)
+        dmg = dmg * xi.spells.damage.calculateNullification(target, wsParams.ele, false, true, false, false)
 
         dmg = utils.handlePhalanx(target, dmg)
         dmg = utils.handleOneForAll(target, dmg)
@@ -967,9 +966,15 @@ xi.weaponskills.takeWeaponskillDamage = function(defender, attacker, wsParams, p
     end
 
     -- Core does not modify the TP for the 10 TP/hit like it should, so we're doing it here
-    local storeTPModifier = 1 + attacker:getMod(xi.mod.STORETP) / 100 -- TODO, make a global function to get this (inhibit TP is not accounted for properly in core)
+    local storeTPModifier = 1 + (attacker:getMod(xi.mod.STORETP) + attacker:getMerit(xi.merit.STORE_TP_EFFECT)) / 100 -- TODO, make a global function to get this (inhibit TP is not accounted for properly in core)
+    local extraHitsTP     = (wsResults.extraHitsLanded * 10 * storeTPModifier) + wsResults.bonusTP
 
-    finaldmg = defender:takeWeaponskillDamage(attacker, finaldmg, attack.type, attack.damageType, attack.slot, primaryMsg, wsResults.tpHitsLanded * attackerTPMult, (wsResults.extraHitsLanded * 10 * storeTPModifier) + wsResults.bonusTP, targetTPMult)
+    -- Extra hits return 0 TP while under the effect of Meikyo Shisui
+    if attacker:hasStatusEffect(xi.effect.MEIKYO_SHISUI) then
+        extraHitsTP = 0
+    end
+
+    finaldmg = defender:takeWeaponskillDamage(attacker, finaldmg, attack.type, attack.damageType, attack.slot, primaryMsg, wsResults.tpHitsLanded * attackerTPMult, extraHitsTP, targetTPMult)
     if wsResults.tpHitsLanded + wsResults.extraHitsLanded > 0 then
         action:recordDamage(defender, attack.type, math.abs(finaldmg), wsResults.criticalHit)
     end

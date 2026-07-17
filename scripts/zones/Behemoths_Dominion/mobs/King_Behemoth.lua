@@ -26,7 +26,7 @@ end
 entity.onMobSpawn = function(mob)
     mob:setLocalVar('[rage]timer', 3600) -- 60 minutes
     mob:setMobMod(xi.mobMod.NO_MOVE, 0)
-    mob:setMobMod(xi.mobMod.WEAPON_BONUS, 58) -- 145 total weapaon damage
+    mob:setMobMod(xi.mobMod.BASE_DAMAGE_MODIFIER, 58) -- 145 total weapaon damage
     mob:setMod(xi.mod.MDEF, 20)
     mob:setMod(xi.mod.ATT, 462)
     mob:setMod(xi.mod.DEF, 500)
@@ -71,7 +71,7 @@ entity.onMobFight = function(mob, target)
 end
 
 entity.onAdditionalEffect = function(mob, target, damage)
-    return xi.mob.onAddEffect(mob, target, damage, xi.mob.ae.STUN, { chance = 20, duration = math.random(4, 9) })
+    return xi.mob.onAddEffect(mob, target, damage, xi.mob.ae.STUN, { chance = 20, duration = math.randomInt(4, 9) })
 end
 
 entity.onSpellPrecast = function(mob, spell)

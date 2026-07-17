@@ -13,6 +13,7 @@ describe('Soultrapper', function()
             zone = xi.zone.ALTAIEU
         })
 
+        player:setUnkillable(true)
         -- Add equipment needed to take pictures
         player:addItem(xi.item.SOULTRAPPER_2000)
         player:addItem(xi.item.BLANK_SOUL_PLATE, 12)
@@ -71,12 +72,15 @@ describe('Soultrapper', function()
             zone = xi.zone.RUAUN_GARDENS,
         })
 
+        stormPlayer:setUnkillable(true)
         stormPlayer:addItem(xi.item.SOULTRAPPER_2000)
         stormPlayer:addItem(xi.item.BLANK_SOUL_PLATE, 1)
         stormPlayer:equipItem(xi.item.SOULTRAPPER_2000)
         stormPlayer:equipItem(xi.item.BLANK_SOUL_PLATE)
 
+        stormPlayer:setWeather(xi.weather.THUNDER)
         local elemental = stormPlayer.entities:moveTo('Thunder_Elemental')
+        elemental:spawn()
         xi.test.world:skipTime(31)
         stormPlayer.actions:useItem(elemental, stormPlayer:findItem(xi.item.SOULTRAPPER_2000):getSlotID())
         xi.test.world:skipTime(1)
@@ -99,7 +103,7 @@ describe('Soultrapper', function()
         player:delItem(xi.item.SOUL_PLATE, 1, xi.inv.INVENTORY)
 
         -- Reuse after 30s
-        xi.test.world:skipTime(30)
+        xi.test.world:skipTime(31)
         player.actions:useItem(euvhi, soultrapper:getSlotID())
         xi.test.world:skipTime(1)
         xi.test.world:tickEntity(player)

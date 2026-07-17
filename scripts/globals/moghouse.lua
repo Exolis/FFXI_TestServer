@@ -257,7 +257,7 @@ xi.moghouse.onMoghouseZoneEvent = function(player, prevZone)
         local prevZoneLineID                        = player:getPreviousZoneLineID()
         local moghouseEntrance                      = zoneId == prevZoneId and moghouseZoneLines[prevZoneLineID] or 1
         local x, y, z, r, randomizedAxis, randomMax = unpack(xi.moghouse.exits[zoneId][moghouseEntrance])
-        local randomOffset                          = math.random(-randomMax * 1000, randomMax * 1000) -- offset -/+ from center point
+        local randomOffset                          = math.randomInt(-randomMax * 1000, randomMax * 1000) -- offset -/+ from center point
         local offsetValue                           = randomOffset / 1000 -- 0.000 - N.N00 variance
 
         -- A few moghouses are rotated so we handle them first.
@@ -311,6 +311,7 @@ xi.moghouse.onMoghouseZoneIn = function(player, prevZone)
     -- Reset: !exec player:setMoghouseFlag(0)
     -- Complete quests: !exec player:setMoghouseFlag(7)
     if
+        xi.settings.main.ENABLE_MOG_HOUSE_2F == 1 and
         xi.moghouse.inMogHouseInHomeNation(player) and
         growingFlowers and
         aLadysHeart and

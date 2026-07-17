@@ -31,6 +31,7 @@ enum class FollowType : uint8
 };
 
 class CMobEntity;
+
 class CMobController : public CController
 {
 public:
@@ -73,6 +74,7 @@ protected:
     virtual void Move();
 
     virtual auto DoCombatTick(timer::time_point tick) -> Task<void>;
+    virtual auto DoBuffTick() -> bool;
     void         FaceTarget(uint16 targid = 0) const;
     virtual void HandleEnmity();
 
@@ -81,7 +83,7 @@ protected:
     void         FollowRoamPath();
     auto         CanMoveForward(float currentDistance) -> bool;
     auto         IsSpecialSkillReady(float currentDistance) const -> bool;
-    auto         IsSpellReady(float currentDistance) const -> bool;
+    auto         IsSpellReady(const float& currentDistance, const float& meleeRange) const -> bool;
 
     CBattleEntity* PTarget{ nullptr };
 
@@ -106,4 +108,7 @@ private:
     bool              m_firstSpell{ true };
     timer::time_point m_LastRoamScript{ timer::time_point::min() };
     uint16_t          m_tpThreshold{ 1000 };
+
+    // TryLink()'s party-link scan is hot; run it only every other combat tick.
+    bool linkScanThisTick_{ false };
 };

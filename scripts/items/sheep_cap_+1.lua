@@ -8,7 +8,7 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     return xi.itemUtils.itemBoxOnItemCheck(target)
 end
 
@@ -27,7 +27,7 @@ itemObject.onItemUse = function(target)
         xi.item.CLUMP_OF_MOKO_GRASS
     }
 
-    local gift = math.random(1, #giftList)
+    local gift = math.randomInt(1, #giftList)
 
     npcUtil.giveItem(target, { { giftList[gift], 1 } })
 end

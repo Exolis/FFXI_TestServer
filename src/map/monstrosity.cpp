@@ -19,18 +19,19 @@
 ===========================================================================
 */
 
-// ===
+//
 // See scripts/globals/monstrosity.lua for a general overview of how Monstrosity works and is designed.
-// ===
+//
 
 #include "monstrosity.h"
 
 #include "ai/ai_container.h"
 
-#include "common/database.h"
 #include "common/logging.h"
 
-#include "entities/charentity.h"
+#include <common/types/hash_map.h>
+
+#include "entities/char_entity.h"
 
 #include "lua/luautils.h"
 
@@ -40,12 +41,10 @@
 #include "packets/s2c/0x0ac_command_data.h"
 
 #include "utils/charutils.h"
-#include "utils/zoneutils.h"
 
 #include "packets/c2s/0x01a_action.h"
 #include "packets/c2s/0x102_extended_job.h"
 #include "packets/s2c/0x063_miscdata_monstrosity.h"
-#include "status_effect.h"
 #include "status_effect_container.h"
 
 struct MonstrositySpeciesRow
@@ -70,8 +69,8 @@ struct MonstrosityInstinctRow
 namespace
 {
 
-std::unordered_map<uint16, MonstrositySpeciesRow>  gMonstrositySpeciesMap{};
-std::unordered_map<uint16, MonstrosityInstinctRow> gMonstrosityInstinctMap{};
+HashMap<uint16, MonstrositySpeciesRow>  gMonstrositySpeciesMap{};
+HashMap<uint16, MonstrosityInstinctRow> gMonstrosityInstinctMap{};
 
 } // namespace
 
@@ -332,22 +331,26 @@ void monstrosity::HandleZoneIn(CCharEntity* PChar)
     {
         auto duration = PChar->m_PMonstrosity->Belligerency ? 1min : 18h;
 
-        CStatusEffect* PEffect = new CStatusEffect(EFFECT::EFFECT_GESTATION, EFFECT::EFFECT_GESTATION, 0, 0s, duration);
+        // TODO: Move these flags into the db
+        const auto gestationFlags = xi::StatusEffectFlag::Invisible |
+                                    xi::StatusEffectFlag::Death |
+                                    xi::StatusEffectFlag::Attack |
+                                    xi::StatusEffectFlag::MagicBegin |
+                                    xi::StatusEffectFlag::Detectable |
+                                    xi::StatusEffectFlag::OnZone;
+        // NOTE: It DOES say the effect wears off, so Logout / NoLossMessage are intentionally not set.
 
-        // TODO: Move these into the db
-        PEffect->AddEffectFlag(EFFECTFLAG_INVISIBLE);
-        PEffect->AddEffectFlag(EFFECTFLAG_DEATH);
-        PEffect->AddEffectFlag(EFFECTFLAG_ATTACK);
-        PEffect->AddEffectFlag(EFFECTFLAG_MAGIC_BEGIN);
-        PEffect->AddEffectFlag(EFFECTFLAG_DETECTABLE);
-        PEffect->AddEffectFlag(EFFECTFLAG_ON_ZONE);
-
-        // PEffect->AddEffectFlag(EFFECTFLAG_LOGOUT);
-
-        // NOTE: It DOES say the effect wears off
-        // PEffect->AddEffectFlag(EFFECTFLAG_NO_LOSS_MESSAGE);
-
-        PChar->StatusEffectContainer->AddStatusEffect(PEffect, EffectNotice::Silent);
+        PChar->StatusEffectContainer->AddStatusEffectSilent(
+            xi::StatusEffect::Gestation,
+            static_cast<uint16>(xi::StatusEffect::Gestation),
+            0,
+            0s,
+            duration,
+            0,
+            0,
+            0,
+            0,
+            gestationFlags);
     }
 
     SendFullMonstrosityUpdate(PChar);
@@ -431,7 +434,7 @@ void monstrosity::HandleEquipChangePacket(CCharEntity* PChar, const mon_data_t& 
     {
         uint8 total = 0;
 
-        for (auto const& idx : input)
+        for (const auto& idx : input)
         {
             total += gMonstrosityInstinctMap[idx].cost;
         }
@@ -442,7 +445,7 @@ void monstrosity::HandleEquipChangePacket(CCharEntity* PChar, const mon_data_t& 
     auto instinctsContainDuplicates = [&](const std::array<uint16, 12>& input) -> bool
     {
         std::unordered_set<uint16> set;
-        for (auto const& idx : input)
+        for (const auto& idx : input)
         {
             if (idx == 0)
             {
@@ -613,7 +616,7 @@ void monstrosity::HandleDeathMenu(CCharEntity* PChar, const GP_CLI_COMMAND_ACTIO
 
         PChar->SetDeathTime(timer::time_point::min());
 
-        PChar->status = STATUS_TYPE::DISAPPEAR;
+        PChar->status = xi::Status::Disappear;
 
         PChar->clearPacketList();
 

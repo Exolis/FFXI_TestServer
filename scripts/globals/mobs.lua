@@ -18,12 +18,22 @@ end
 
 -- is a lottery NM in the table already spawned or primed to pop?
 local function lotteryPrimed(phList)
-    local nm
+    local nm = nil
 
     for k, v in pairs(phList) do
-        nm = GetMobByID(v)
-        if nm ~= nil and (nm:isSpawned() or nm:getRespawnTime() ~= 0) then
-            return true
+        -- if `v` is a table, then it's a table of numbers: { id, id2 }
+        if type(v) == 'table' then
+            for _, innerId in pairs(v) do
+                nm = GetMobByID(innerId)
+                if nm ~= nil and (nm:isSpawned() or nm:getRespawnTime() ~= 0) then
+                    return true
+                end
+            end
+        else -- `v` is a number
+            nm = GetMobByID(v)
+            if nm ~= nil and (nm:isSpawned() or nm:getRespawnTime() ~= 0) then
+                return true
+            end
         end
     end
 
@@ -76,16 +86,42 @@ xi.mob.updateNMSpawnPoint = function(mobParam, spawnPointsOverride)
         #spawnPoints > 0
     then
         local chosenSpawn    = utils.randomEntry(spawnPoints)
-        local randomRotation = math.random(0, 255) -- rotation does not matter
+        local randomRotation = math.randomInt(0, 255) -- rotation does not matter
 
         -- Updates the mob's spawn point
         mobParam:setSpawn(chosenSpawn.x, chosenSpawn.y, chosenSpawn.z, randomRotation)
     end
 end
 
+local function getMobEntityObj(phNmId)
+    local mobEntityObj = nil
+
+    if type(phNmId) == 'number' then
+        mobEntityObj = getMobLuaPathObject(GetMobByID(phNmId))
+    elseif type(phNmId) == 'table' then
+        mobEntityObj = getMobLuaPathObject(GetMobByID(utils.randomEntry(phNmId)))
+    end
+
+    return mobEntityObj
+end
+
+local function getNmId(phList, phId)
+    local nmId = nil
+
+    if phList and phList[phId] then
+        if type(phList[phId]) == 'number' then
+            nmId = phList[phId]
+        elseif type(phList[phId]) == 'table' then
+            nmId = utils.randomEntry(phList[phId])
+        end
+    end
+
+    return nmId
+end
+
 -- potential lottery placeholder was killed
 ---@param ph CBaseEntity
----@param phNmId integer
+---@param phNmId integer|table
 ---@param chance integer
 ---@param cooldown integer
 ---@param params table?
@@ -104,11 +140,11 @@ xi.mob.phOnDespawn = function(ph, phNmId, chance, cooldown, params)
     local nmId         = nil
     local nm           = nil
     local phList       = nil
-    local mobEntityObj = getMobLuaPathObject(GetMobByID(phNmId))
+    local mobEntityObj = getMobEntityObj(phNmId)
 
     if mobEntityObj then
         phList = mobEntityObj.phList
-        nmId   = phList and phList[phId]
+        nmId   = getNmId(phList, phId)
         nm     = nmId and GetMobByID(nmId)
     end
 
@@ -152,7 +188,7 @@ xi.mob.phOnDespawn = function(ph, phNmId, chance, cooldown, params)
     if
         GetSystemTime() <= pop or
         lotteryPrimed(phList) or
-        math.random(1, 1000) > chance
+        math.randomInt(1, 1000) > chance
     then
         return false
     end
@@ -176,6 +212,7 @@ xi.mob.phOnDespawn = function(ph, phNmId, chance, cooldown, params)
     end
 
     -- on PH death, replace PH repop with NM repop
+    -- TODO, fetch phId's spawn slot and disable respawn for all mobs in that spawn slot
     DisallowRespawn(phId, true)
     DisallowRespawn(nmId, false)
 
@@ -516,11 +553,24 @@ local addEffectImmediate = function(mob, target, damage, ae, params)
 
     power = addBonusesAbility(mob, ae.ele, target, power, ae.bonusAbilityParams)
     power = power * applyResistanceAddEffect(mob, target, ae.ele, 0)
-    power = power * xi.spells.damage.calculateAbsorption(target, ae.ele, true)
-    power = power * xi.spells.damage.calculateNullification(target, ae.ele, true, false)
+    power = power * xi.spells.damage.calculateAbsorption(target, ae.ele, false, true, false, false)
+    power = power * xi.spells.damage.calculateNullification(target, ae.ele, false, true, false, false)
 
     if ae.sub ~= xi.subEffect.TP_DRAIN and ae.sub ~= xi.subEffect.MP_DRAIN then
-        power = finalMagicNonSpellAdjustments(mob, target, ae.ele, power)
+        power = math.floor(power * xi.combat.damage.calculateDamageAdjustment(target, false, true, false, false))
+        power = math.floor(power * xi.spells.damage.calculateAbsorption(target, ae.ele, false, true, false, false))
+        power = math.floor(power * xi.spells.damage.calculateNullification(target, ae.ele, false, true, false, false))
+        power = math.floor(target:handleSevereDamage(power, false))
+        power = utils.handlePhalanx(target, power)
+        power = utils.handleOneForAll(target, power)
+        power = utils.handleStoneskin(target, power)
+        power = utils.clamp(power, -99999, 99999)
+
+        if power < 0 then
+            power = -(target:addHP(-power))
+        else
+            target:takeDamage(power, mob, xi.attackType.MAGICAL, xi.damageType.ELEMENTAL + ae.ele)
+        end
     end
 
     -- target:printToPlayer(string.format('Adjusted Power: %f', power)) -- DEBUG
@@ -576,7 +626,7 @@ xi.mob.onAddEffect = function(mob, target, damage, effect, params)
 
         -- target:printToPlayer(string.format('Chance: %i', chance)) -- DEBUG
 
-        if math.random(1, 100) <= chance then
+        if math.randomInt(1, 100) <= chance then
 
             -- STATUS EFFECT
             if ae.applyEffect then
@@ -741,10 +791,13 @@ xi.mob.callPets = function(mob, petIds, params)
             then
                 spawnedCount = spawnedCount + 1
                 -- spawn pet around owner
-                petToSummon:setSpawn(pos.x + math.random(-2, 2), pos.y, pos.z + math.random(-2, 2), pos.rot)
+                local randomX = math.randomInt(1, 100) <= 50 and 2 or -2
+                local randomZ = math.randomInt(1, 100) <= 50 and 2 or -2
+
+                petToSummon:setSpawn(pos.x + randomX, pos.y, pos.z + randomZ, pos.rot)
                 petToSummon:spawn()
                 -- set home to be the owner's home position
-                petToSummon:setSpawn(spawnPos.x, spawnPos.y, spawnPos.z, spawnPos.rot)
+                petToSummon:setSpawn(spawnPos.x + randomX, spawnPos.y, spawnPos.z + randomZ, spawnPos.rot)
 
                 local ownerRoamListenerName = fmt('OWNER_ASSIST_{}', petId)
                 if params.superLink then

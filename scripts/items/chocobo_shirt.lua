@@ -6,7 +6,7 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     return xi.itemUtils.itemBoxOnItemCheck(target)
 end
 
@@ -21,7 +21,7 @@ itemObject.onItemUse = function(target)
     -- 4102 Light
     -- 4103 Dark
     local itemID = 4095 + VanadielDayElement()
-    npcUtil.giveItem(target, { { itemID, math.random(2, 12) } })
+    npcUtil.giveItem(target, { { itemID, math.randomInt(2, 12) } })
 end
 
 return itemObject

@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <regex>
@@ -729,30 +728,32 @@ std::vector<std::string> split(const std::string& s, const std::string& delimite
 
 std::string to_lower(const std::string& s)
 {
+    // Branchless ASCII uppercase. Avoids the locale-aware std::tolower (a non-inlined,
+    // table-indirected call per character); all keys/names this is used on are ASCII.
     std::string data = s;
-    std::transform(
-        data.begin(),
-        data.end(),
-        data.begin(),
-        [](unsigned char c)
+    for (char& c : data)
+    {
+        if (c >= 'A' && c <= 'Z')
         {
-            return std::tolower(c);
-        });
+            c += ('a' - 'A');
+        }
+    }
 
     return data;
 }
 
 std::string to_upper(const std::string& s)
 {
+    // Branchless ASCII uppercase. Avoids the locale-aware std::toupper (a non-inlined,
+    // table-indirected call per character); all keys/names this is used on are ASCII.
     std::string data = s;
-    std::transform(
-        data.begin(),
-        data.end(),
-        data.begin(),
-        [](unsigned char c)
+    for (char& c : data)
+    {
+        if (c >= 'a' && c <= 'z')
         {
-            return std::toupper(c);
-        });
+            c -= ('a' - 'A');
+        }
+    }
 
     return data;
 }
@@ -795,7 +796,7 @@ bool matches(const std::string& target, const std::string& pattern)
 
 bool starts_with(const std::string& target, const std::string& pattern)
 {
-    return target.rfind(pattern, 0) != std::string::npos;
+    return target.starts_with(pattern);
 }
 
 std::string replace(const std::string& target, const std::string& search, const std::string& replace)

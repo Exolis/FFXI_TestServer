@@ -43,13 +43,6 @@ enum SCRIPTTYPE : uint16
     //...
 };
 
-enum class ITEMCHECK
-{
-    NONE    = 0,
-    EQUIP   = 1,
-    UNEQUIP = 2
-};
-
 class CItemEquipment : public CItemUsable
 {
 public:
@@ -59,10 +52,10 @@ public:
 
     struct itemLatent
     {
-        LATENT ConditionsID;
-        uint16 ConditionsValue;
-        Mod    ModValue;
-        int16  ModPower;
+        xi::Latent ConditionsID;
+        uint16     ConditionsValue;
+        Mod        ModValue;
+        int16      ModPower;
     };
 
     uint8  getReqLvl() const;
@@ -102,16 +95,20 @@ public:
     void ApplyAugment(uint8 slot);
 
     void addModifier(CModifier modifier);
+
     void addModifier(Mod mod, int16 modValue)
     {
         return addModifier(CModifier(mod, modValue));
     };
+
     void addPetModifier(CPetModifier modifier);
+
     void addPetModifier(Mod mod, PetModType petType, int16 modValue)
     {
         return addPetModifier(CPetModifier(mod, petType, modValue));
     };
-    void addLatent(LATENT ConditionsID, uint16 ConditionsValue, Mod ModValue, int16 ModPower);
+
+    void addLatent(xi::Latent ConditionsID, uint16 ConditionsValue, Mod ModValue, int16 ModPower);
 
     bool delModifier(Mod mod, int16 modValue);
     bool delPetModifier(Mod mod, PetModType petType, int16 modValue);

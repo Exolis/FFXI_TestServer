@@ -25,6 +25,7 @@ xi.settings.main =
     RESTRICT_CONTENT = 0,
 
     -- Enable Expansion (1 = Enabled, 0 = Disabled)
+    ENABLE_ROTZ      = 1,
     ENABLE_COP       = 1,
     ENABLE_TOAU      = 1,
     ENABLE_WOTG      = 1,
@@ -36,6 +37,10 @@ xi.settings.main =
     ENABLE_ROV       = 1,
     ENABLE_TVR       = 1,
     ENABLE_VOIDWATCH = 1, -- Not an expansion, but has its own storyline. (Not Implemented)
+
+    -- MOG HOUSE
+    ENABLE_MOG_HOUSE_2F = 1, -- Enables Access to Mog House 2F / Mog Safe 2.
+    ENABLE_MOG_GARDEN   = 1, -- Enables Access to Mog Garden, will send player to the area they entered from if disabled.
 
     -- FIELDS OF VALOR/Grounds of Valor settings
     ENABLE_FIELD_MANUALS  = 1, -- Enables Fields of Valor
@@ -80,17 +85,9 @@ xi.settings.main =
 
     -- Monstrosity (Heavily in development, use at your own risk!)
     ENABLE_MONSTROSITY               = 0,
-    MONSTROSITY_INFAMY_RATIO         = 0.1, -- (float) The ratio of exp gained to infamy gained on defeating a mob.
-    MONSTROSITY_INFAMY_MESSAGING     = 0,   -- Show a message when you gain infamy.
     MONSTROSITY_TELEPORT_TO_FERETORY = 0,   -- Return to Feretory instead of the zone where you entered Feretory when Relinquishing or after death.
     MONSTROSITY_TRIGGER_NPCS         = 0,   -- Allow Monipulators to trigger NPCs outside of the Feretory.
     MONSTROSITY_DONT_WIPE_BUFFS      = 0,   -- If set, buffs won't be wiped when changing species in the Feretory.
-
-    -- Monstrosity PVP Mode
-    -- 0: Retail (fully restricted): Monipulators and Players must both be flagged for Beligerency before they can fight
-    -- 1: (partially restricted): Players do not need to be flagged to fight, but Monipulators do.
-    -- 2: (open): Belligerency is not needed for Players and Monipulators to fight.
-    MONSTROSITY_PVP_MODE        = 0,
     MONSTROSITY_PVP_ZONE_BYPASS = 0, -- Show the full zone teleport menu from Feretory while Belligerency is flagged.
 
     -- TREASURE CASKETS
@@ -127,7 +124,6 @@ xi.settings.main =
     BAYLD_RATE          = 1.000, -- Multiples bayld earned from quests.
     -- Note: EXP rates are also influenced by conf setting
     EXP_RATE            = 1.000, -- Multiplies exp from script (except FoV/GoV).
-    CAPACITY_RATE       = 1.000, -- Multiplies capacity points gained.
     BOOK_EXP_RATE       = 1.000, -- Multiplies exp from FoV/GoV book pages.
     TABS_RATE           = 1.000, -- Multiplies tabs earned from fov.
     ROE_EXP_RATE        = 1.000, -- Multiplies exp earned from records of eminence.
@@ -164,11 +160,14 @@ xi.settings.main =
     USE_ADOULIN_WEAPON_SKILL_CHANGES = true,  -- true/false. Change to toggle new Adoulin weapon skill damage calculations
     DISABLE_PARTY_EXP_PENALTY        = false, -- true/false.
     ENABLE_IMMUNOBREAK               = true,  -- true/false. Allow/Disallow immunobreaks to happen.
+    ENABLE_SMN_MAGIC_CAST_TIME_MERIT = true,  -- true/false. If false, the Summoning Magic Casting Time merit has no effect on cast time (pre-2012 behavior).
 
     -- TRUSTS
     ENABLE_TRUST_CASTING           = 1,
     ENABLE_TRUST_QUESTS            = 1,
     ENABLE_TRUST_CUSTOM_ENGAGEMENT = 0,
+
+    ENABLE_LIMITED_TIME_TRUST = 0, -- 0 = disabled, 1 = Cornelia, 2 = Matsui-P, will get automatically added to players trust list if the player has a trust permit KI.
 
     ENABLE_TRUST_ALTER_EGO_EXTRAVAGANZA          = 0, -- 0 = disabled, 1 = summer/ny, 2 = spring/autumn, 3 = both
     ENABLE_TRUST_ALTER_EGO_EXTRAVAGANZA_ANNOUNCE = 0, -- 0 = disabled, 1 = add announcement to player login
@@ -193,7 +192,6 @@ xi.settings.main =
     EXCAVATION_RATE         = 50, -- % chance to recieve an item from excavation.  Set between 0 and 100.
     LOGGING_RATE            = 50, -- % chance to recieve an item from logging.  Set between 0 and 100.
     MINING_RATE             = 50, -- % chance to recieve an item from mining.  Set between 0 and 100.
-    DIGGING_RATE            = 85, -- % chance to receive an item from chocbo digging during favorable weather.  Set between 0 and 100.
 
     HEALING_TP_CHANGE       = -100, -- Change in TP for each healing tick. Default is -100
 
@@ -208,6 +206,9 @@ xi.settings.main =
     NM_LOTTERY_CHANCE = 1.0,
     -- Multiplier to NM lottery cooldown time (Default 1.0) eg. 2.0 = twice as long. 0 = no cooldowns.
     NM_LOTTERY_COOLDOWN = 1.0,
+
+    -- CONQUEST SETTINGS
+    CONQUEST_INFLUENCE_CAP = 250000, -- Combined influence pool per region shared across the 4 nations. Ceiling is 20 million.
 
     -- GARRISON SETTINGS
     ENABLE_GARRISON        = true,  -- If true, enables garrison functionality
@@ -244,10 +245,6 @@ xi.settings.main =
 
     -- SPELL SPECIFIC SETTINGS
     STONESKIN_CAP                   = 350,   -- Soft cap for hp absorbed by stoneskin
-    BLINK_SHADOWS                   = 2,     -- Number of shadows supplied by Blink spell
-    SPIKE_EFFECT_DURATION           = 180,   -- the duration of RDM, BLM spikes effects (not Reprisal)
-    ELEMENTAL_DEBUFF_DURATION       = 120,   -- base duration of elemental debuffs
-    AQUAVEIL_COUNTER                = 1,     -- Base amount of hits Aquaveil absorbs to prevent spell interrupts. Retail is 1.
     SNEAK_INVIS_DURATION_MULTIPLIER = 1,     -- multiplies duration of sneak, invis, deodorize to reduce player torture. 1 = retail behavior.
     USE_OLD_CURE_FORMULA            = false, -- true/false. if true, uses older cure formula (3*MND + VIT + 3*(healing skill/5)) // cure 6 will use the newer formula
     USE_OLD_MAGIC_DAMAGE            = false, -- true/false. if true, uses older magic damage formulas
@@ -299,10 +296,11 @@ xi.settings.main =
     MAX_FAKE_ENTRIES     = 15,
 
     -- NYZUL
-    RUNIC_DISK_SAVE      = true, -- Allow anyone participating in Nyzul to save progress. Set to false so only initiator can save progress.
-    ENABLE_NYZUL_CASKETS = true, -- Enable Treasure casket pops from NMs.
-    ENABLE_VIGIL_DROPS   = true, -- Enable Vigil Weapon drops from NMs.
-    ACTIVATE_LAMP_TIME   = 6000, -- Time in miliseconds for lamps to stay lit. TODO: Get retail confirmation.
+    NYZUL_ENABLED        = false, -- true/false. Enable Nyzul Isle content and functionality.
+    RUNIC_DISK_SAVE      = true,  -- Allow anyone participating in Nyzul to save progress. Set to false so only initiator can save progress.
+    ENABLE_NYZUL_CASKETS = true,  -- Enable Treasure casket pops from NMs.
+    ENABLE_VIGIL_DROPS   = true,  -- Enable Vigil Weapon drops from NMs.
+    ACTIVATE_LAMP_TIME   = 6000,  -- Time in miliseconds for lamps to stay lit. TODO: Get retail confirmation.
 
     -- CHOCOBO RAISING (HEAVILY-IN-DEVELOPMENT, USE AT YOUR OWN RISK)
     -- GM command: `!chocoboraising`
@@ -325,7 +323,6 @@ xi.settings.main =
     BYPASS_EXP_RING_ONE_PER_WEEK = 0,     -- Set to 1 to bypass the limit of one ring per Conquest Tally Week.
     NUMBER_OF_DM_EARRINGS        = 1,     -- Number of earrings players can simultaneously own from Divine Might before scripts start blocking them (Default: 1)
     HOMEPOINT_TELEPORT           = 1,     -- Enables the homepoint teleport system
-    DIG_ABUNDANCE_BONUS          = 0,     -- Increase chance of digging up an item (450  = item digup chance +45)
     DIG_FATIGUE                  = 100,   -- Allowed succesful digs per day. Set to 0 to disable Dig Fatigue
     DIG_GRANT_BURROW             = 0,     -- Set to 1 to grant burrow ability
     DIG_GRANT_BORE               = 0,     -- Set to 1 to grant bore ability
@@ -334,6 +331,7 @@ xi.settings.main =
     EQUIP_FROM_OTHER_CONTAINERS  = false, -- true/false. Allows equipping items from Mog Satchel, Sack, and Case. Only possible with the use of client addons.
     REGIME_REWARD_THRESHOLD      = 15,    -- If the player is more than N levels below the minimum suggested range, do not award experience.
     PERSIST_SEAL_TIMERS          = false, -- Persist seal (Beastmen/Kindred) recast timers across zone changes and logout.
+    GUILD_SHOP_HOLIDAYS          = false, -- true/false. Close each guild shop on its weekly holiday.
 
     -- SYSTEM
     DISABLE_INACTIVITY_WATCHDOG = false, -- true/false. If this is enabled, the watchdog which detects if the main loop isn't being ticked will no longer be able to kill the process.

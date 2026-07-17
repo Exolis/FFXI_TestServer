@@ -21,13 +21,12 @@
 
 #include "auctionutils.h"
 
-#include "common/database.h"
 #include "common/logging.h"
 #include "common/settings.h"
 #include "common/timer.h"
 #include "common/tracy.h"
 
-#include "entities/charentity.h"
+#include "entities/char_entity.h"
 
 #include "packets/c2s/0x04e_auc.h"
 #include "packets/s2c/0x01d_item_same.h"
@@ -35,7 +34,6 @@
 
 #include "utils/charutils.h"
 #include "utils/itemutils.h"
-#include "utils/zoneutils.h"
 
 namespace
 {

@@ -31,7 +31,7 @@ entity.onMobRoam = function(mob)
     if GetSystemTime() - changeTime > 90 then
         local currentForm = mob:getAnimationSub()
         if currentForm == 0 then
-            roamForm = math.random(2, 3) -- Switch from form 0 to form 2 or 3
+            roamForm = math.randomInt(2, 3) -- Switch from form 0 to form 2 or 3
         else
             roamForm = 0 -- Switch back to form 0
         end
@@ -47,7 +47,7 @@ entity.onMobFight = function(mob, target)
     if GetSystemTime() - changeTime > 90 then
         local currentForm = mob:getAnimationSub()
         if currentForm == 0 then
-            roamForm = math.random(2, 3) -- Switch from form 0 to form 2 or 3
+            roamForm = math.randomInt(2, 3) -- Switch from form 0 to form 2 or 3
         else
             roamForm = 0 -- Switch back to form 0
         end
@@ -55,9 +55,6 @@ entity.onMobFight = function(mob, target)
         mob:setAnimationSub(roamForm)
         mob:setLocalVar('changeTime', GetSystemTime())
     end
-end
-
-entity.onMobDeath = function(mob, player, optParams)
 end
 
 return entity

@@ -21,13 +21,9 @@
 
 #include "map_engine.h"
 
-#include "common/blowfish.h"
-#include "common/console_service.h"
-#include "common/database.h"
 #include "common/debug.h"
 #include "common/ipp.h"
 #include "common/logging.h"
-#include "common/macros.h"
 #include "common/settings.h"
 #include "common/timer.h"
 #include "common/utils.h"
@@ -39,7 +35,6 @@
 #include "daily_system.h"
 #include "ipc_client.h"
 #include "job_points.h"
-#include "latent_effect_container.h"
 #include "map_networking.h"
 #include "map_statistics.h"
 #include "mob_spell_list.h"
@@ -74,9 +69,7 @@
 #include "utils/trustutils.h"
 #include "utils/zoneutils.h"
 
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <thread>
 
 #ifdef _WIN32
@@ -157,7 +150,25 @@ auto MapEngine::init() -> Task<void>
     zlib_init();
 
     ShowInfo("do_init: starting ZMQ thread");
-    message::init(networking());
+    ipcClient_ = std::make_unique<IPCClient>(networking(), application_.zmqService());
+    message::init(*ipcClient_);
+
+    // NOTE: We're phasing out server usage without ximeshes and navmeshes. For now for ease of use,
+    // we're still allowing it in CI, but regular usage will demand them.
+    if (!config_.inCI)
+    {
+        if (!std::filesystem::exists("./ximeshes/") || std::filesystem::is_empty("./ximeshes/"))
+        {
+            ShowCritical("./ximeshes/ directory isn't present or is empty! Check your setup.");
+            std::exit(-1);
+        }
+
+        if (!std::filesystem::exists("./navmeshes/") || std::filesystem::is_empty("./navmeshes/"))
+        {
+            ShowCritical("./navmeshes/ directory isn't present or is empty! Check your setup.");
+            std::exit(-1);
+        }
+    }
 
     ShowInfo("do_init: loading items");
     itemutils::Initialize();
@@ -181,7 +192,6 @@ auto MapEngine::init() -> Task<void>
     battleutils::LoadWeaponSkillsList();
     battleutils::LoadMobSkillsList();
     battleutils::LoadPetSkillsList();
-    battleutils::LoadSkillChainDamageModifiers();
     petutils::LoadPetList();
     trustutils::LoadTrustList();
     mobutils::LoadSqlModifiers();
@@ -191,16 +201,6 @@ auto MapEngine::init() -> Task<void>
     synthutils::LoadSynthRecipes();
     synergyutils::LoadSynergyRecipes();
     CItemEquipment::LoadAugmentData(); // TODO: Move to itemutils
-
-    if (!std::filesystem::exists("./ximeshes/") || std::filesystem::is_empty("./ximeshes/"))
-    {
-        ShowError("./ximeshes/ directory isn't present or is empty");
-    }
-
-    if (!std::filesystem::exists("./navmeshes/") || std::filesystem::is_empty("./navmeshes/"))
-    {
-        ShowWarning("./navmeshes/ directory isn't present or is empty");
-    }
 
     co_await zoneutils::Initialize(scheduler_, config_);
     instanceutils::Initialize(config_);

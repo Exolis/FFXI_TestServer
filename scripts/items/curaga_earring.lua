@@ -6,14 +6,14 @@
 ---@type TItem
 local itemObject = {}
 
-itemObject.onItemCheck = function(target, item, param, caster)
+itemObject.onItemCheck = function(target, item, caster)
     return 0
 end
 
 -- Random roll for each target between 50 and 75
 -- Cure Pot, Cure Pot II, Cure Pot Received do not work
 itemObject.onItemUse = function(target, user, item, action)
-    local healAmount = math.random(50, 75)
+    local healAmount = math.randomInt(50, 75)
 
     healAmount = healAmount * xi.settings.main.CURE_POWER
 

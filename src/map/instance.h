@@ -24,8 +24,9 @@
 
 #include "zone_entities.h"
 
+#include <common/types/hash_map.h>
+
 #include <set>
-#include <unordered_map>
 
 enum INSTANCE_STATUS
 {
@@ -86,6 +87,8 @@ public:
     uint16 GetBackgroundMusicDay();
     uint16 GetBackgroundMusicNight();
 
+    auto overlayId() const -> uint32;
+
 private:
     void LoadInstance();
 
@@ -107,8 +110,9 @@ private:
     INSTANCE_STATUS     m_status{ INSTANCE_NORMAL };
     std::vector<uint32> m_registeredChars;
     std::set<uint32>    m_enteredChars;
+    uint32              overlayId_{ 0 };
 
-    std::unordered_map<std::string, uint64_t> localVars_;
+    HashMap<std::string, uint64_t> localVars_;
 };
 
 #endif
