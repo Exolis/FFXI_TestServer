@@ -1,0 +1,17 @@
+# ServerManager dependencies
+#
+# Reproduce the GUI tool's runtime environment with:
+#     python -m venv venv
+#     # Windows:
+#     .\venv\Scripts\activate
+#     # macOS / Linux:
+#     # source venv/bin/activate
+#     pip install -r requirements.txt
+#
+# Versions pinned to those verified in the reference virtualenv on 2026-06-30.
+
+PyQt6==6.11.0
+PyQt6-Qt6==6.11.1
+PyQt6-sip==13.11.1
+mysql-connector-python==9.7.0
+requests==2.34.2
