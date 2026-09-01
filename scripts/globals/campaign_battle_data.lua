@@ -2,6 +2,8 @@
 -- Campaign Battle Data
 -- Per-zone configuration for Campaign Battle spawns.
 -----------------------------------
+require('scripts/globals/campaign')
+-----------------------------------
 xi = xi or {}
 xi.campaignBattle = xi.campaignBattle or {}
 
@@ -162,9 +164,19 @@ xi.campaignBattle.beastmanDefaults =
 --
 -- Fields:
 --   beastmanFaction       : CampaignArmy enum for this zone's beastman attacker
---   fortPositions         : table of {x, y, z, rot} for fortification NPCs
---   fortLook             : model ID for fortification NPC
---   maxFortHp            : aggregate HP pool of the fortification
+--   fortPosition          : {x, y, z, rot} anchor of the zone's ONE fort.
+--                          (fortPositions[1] is still accepted as the anchor.)
+--   fortTargetOffsets    : optional table of {dx, dy, dz, rot?} offsets from the anchor,
+--                          one per attackable target point. Defaults to 4 points in a
+--                          3-yalm cross around the anchor (retail forts have 4).
+--                          The fort's HP pool is split evenly across these points.
+--   fortLook             : model ID for the fortification mob
+--   fortLevel            : level of the fortification mob (default 75)
+--   fortGroupId          : mob group id used by insertDynamicEntity (default 1)
+--   defaultFortPoints    : fortification points to use ONLY when the region reports 0
+--                          (bootstrap for testing; such a battle does not persist its result)
+--   maxFortHp            : DEPRECATED - fort HP is now derived from the region's
+--                          fortification points (see FORT_HP_PER_POINT in campaign_battle.lua)
 --   allySpawnPositions   : table of {x, y, z, rot} for allied NPC spawns
 --   allyCount            : number of allied NPCs to spawn
 --   beastmanSpawnPositions: table of {x, y, z, rot} for beastman mob spawns

@@ -152,7 +152,7 @@ Sources: [BG-Wiki Campaign](https://www.bg-wiki.com/ffxi/Category:Campaign), [BG
         a. Tallying Results: Once per week (Monday after Japan midnight), tactical assessment results and Campaign Ops completion rates are tallied to determine battle strategies for the following week.
         b. Determining Policy: Previous week's tally results determine current week's battle strategies and logistics.
         c. Implementing Strategy: Players engage in Campaign battles, Campaign Ops, etc. following predetermined policy. Teleportation services available to active battle areas.
-        d. Tactical Assessment: Polling conducted in each nation about implemented military policy.
+        d. Tactical Assessment: Polling conducted in each nation about implemented military policy. 
         e. Steps repeat weekly.
 
     10. Fortification Locations (all zones with known fort positions):

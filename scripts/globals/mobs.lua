@@ -9,7 +9,17 @@ xi = xi or {}
 xi.mob = xi.mob or {}
 
 -- onMobDeathEx is called from the core
+-- The core calls this once per alliance member in the killer's zone
+-- (see luautils.cpp CCharEntity::ForAlliance), with isKiller true only for
+-- the member who landed the killing blow.
 xi.mob.onMobDeathEx = function(mob, player, isKiller, isWeaponSkillKill)
+    -- Campaign Op kill tracking.
+    -- Guarded rather than require()d: campaign_ops.lua pulls in campaign_ops_data,
+    -- which reads xi.campaign.* at load time, so requiring it here would add a
+    -- global load-order dependency. The guard costs one nil check per mob death.
+    if xi.campaignOps ~= nil and xi.campaignOps.onMobDeath ~= nil then
+        xi.campaignOps.onMobDeath(mob, player, isKiller)
+    end
 end
 
 -----------------------------------

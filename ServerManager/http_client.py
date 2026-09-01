@@ -50,5 +50,10 @@ class HTTPClient:
         """Ask the world server to reload campaign state from the DB and
         broadcast it to all map servers. Call this after directly editing
         the campaign_map / campaign_nation tables so map servers pick up
-        the change without waiting for the next scheduled tally."""
-        return self._post_request("/api/campaign/refresh")
+        the change without waiting for the next scheduled tally.
+
+        NOTE: the path is "/campaign/refresh", not "/api/campaign/refresh".
+        HTTP_SERVER_URL already ends in "/api", and _post_request appends the
+        endpoint to it, so including "/api" here produced "/api/api/..." (404).
+        """
+        return self._post_request("/campaign/refresh")

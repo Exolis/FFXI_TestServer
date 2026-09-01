@@ -245,7 +245,7 @@ local function getSigilRank(player)
     end
 
     return 0
-}
+end
 
 local function getSigilMenuOptions(player)
     -- Bit Values:

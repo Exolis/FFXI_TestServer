@@ -32,15 +32,19 @@ local function createBattleInstance(zoneId)
         zoneId          = zoneId,
         state           = xi.campaignBattle.state.IDLE,
         startTime       = 0,
-        fortifications  = {},  -- table of spawned fortification NPC entity IDs
+        fortifications  = {},  -- table of the fort's target-point MOB entity IDs
         alliedNpcs      = {},  -- table of spawned allied NPC entity IDs
         beastmanMobs    = {},  -- table of spawned beastman mob entity IDs
         waveCount       = 0,   -- current wave of beastman attackers
         maxWaves        = 3,   -- total waves before battle ends
         deadAllies      = 0,   -- count of allied NPCs killed
         deadBeastmen    = 0,   -- count of beastman mobs killed
-        fortHp          = 0,   -- current fortification HP (aggregate)
+        fortHp          = 0,   -- current fortification HP (aggregate, derived from live fort mobs)
         maxFortHp       = 0,   -- max fortification HP
+        fortPoints      = 0,   -- fortification POINTS this battle was seeded with
+        fortFromRegion  = false, -- true when fortPoints came from real region state (see spawnFortifications)
+        fortsDestroyed  = 0,   -- count of the fort's target points destroyed
+        fortAllegiance  = nil, -- who OWNS the forts this battle (xi.allegiance.MOB = beastman-held)
     }
 end
 
@@ -78,6 +82,10 @@ local zoneToCampaignId =
     [155] = 24,[156] = 25,
 }
 
+-- Exposed so sibling campaign modules (e.g. campaign_ops) can map a zone id to
+-- the campaignId that GetCampaignStatus() keys its rows by.
+xi.campaignBattle.zoneToCampaignId = zoneToCampaignId
+
 local function getZoneControlNation(zone)
     -- Returns: 2=Sandy, 4=Bastok, 6=Windy, 8=Beastmen
     local zoneId     = zone:getID()
@@ -103,20 +111,200 @@ end
 -- Fortification Spawning
 -----------------------------------
 
--- Spawn fortification NPCs at the zone's outpost location.
--- These are targetable NPC entities that represent the physical fort.
+-- A zone has ONE fort, presented as several attackable TARGET POINTS. Each target
+-- point is a MOB so it can be attacked and has real HP, but they are inert
+-- structures: they never move, never aggro, never attack, cast, or use abilities,
+-- and award no exp or drops.
+-- (On retail, Campaign kills give no exp/drops/crystals - only campaign points.)
+-- The fort is razed when every one of its target points is destroyed.
+-- Source: https://www.bg-wiki.com/ffxi/Campaign_Battle
+--
+-- HP SCALE: a fort's HP is derived from the region's fortification POINTS at
+-- FORT_HP_PER_POINT HP each. Deriving HP from points (rather than a fraction of
+-- some max) means damage converts straight back into fortification points when
+-- the battle ends, and needs no max_fortifications value - which GetCampaignStatus()
+-- does not currently expose to Lua.
+local FORT_HP_PER_POINT = 20
+
+-- Used only when the region reports 0 fortifications, so battles remain testable
+-- while the fortification economy is unpopulated. A battle seeded this way does
+-- NOT write its result back to the region (that would invent fortifications).
+local FORT_BOOTSTRAP_POINTS = 100
+
+-- A zone has ONE fort, and that fort presents several attackable TARGET POINTS
+-- (retail: 4). Target points are placed at these {dx, dy, dz, rot?} offsets from
+-- the fort's anchor position. dx/dz are the horizontal plane; dy is height.
+-- Override per zone with data.fortTargetOffsets.
+-- Source: https://www.bg-wiki.com/ffxi/Campaign_Battle
+local FORT_DEFAULT_TARGET_OFFSETS =
+{
+    {  3.0, 0.0,  0.0 },
+    { -3.0, 0.0,  0.0 },
+    {  0.0, 0.0,  3.0 },
+    {  0.0, 0.0, -3.0 },
+}
+
+-- Read a zone's current fortification points from live campaign state.
+-- Returns nil when the zone is not part of the campaign map.
+local function getZoneFortificationPoints(zone)
+    local campaignId = zoneToCampaignId[zone:getID()]
+
+    if campaignId == nil then
+        return nil
+    end
+
+    local status = GetCampaignStatus()
+
+    if status then
+        for _, z in ipairs(status) do
+            if z.zoneId == campaignId then
+                return z.fort
+            end
+        end
+    end
+
+    return nil
+end
+
+-----------------------------------
+-- External control / telemetry channel (ServerManager UI)
+--
+-- The map server has no HTTP surface, so the Python ServerManager talks to this
+-- system through the DB-backed `server_variables` table. GetServerVariable()
+-- does a fresh SELECT on every call (see serverutils::GetServerVar), so a row
+-- written externally is picked up without any C++ change or rebuild.
+--
+--   CampaignBattleReq_<zoneId>  written BY the UI: 1 = start battle, 2 = end battle.
+--                               Cleared back to 0 by onGameHour once handled.
+--   CampaignFortHp_<zoneId>     written BY us: current aggregate fort HP (0 when idle).
+--   CampaignFortMax_<zoneId>    written BY us: fort HP pool for the running battle.
+--
+-- Requests are polled in onGameHour, so a start takes effect within one
+-- Vana'diel hour (144 real seconds).
+-----------------------------------
+xi.campaignBattle.request =
+{
+    NONE  = 0,
+    START = 1,
+    STOP  = 2,
+}
+
+local function battleRequestVar(zoneId)
+    return string.format('CampaignBattleReq_%d', zoneId)
+end
+
+-- Publish fort health so the ServerManager UI can display it live.
+local function publishFortHp(zoneId, hp, maxHp)
+    SetServerVariable(string.format('CampaignFortHp_%d', zoneId), hp)
+    SetServerVariable(string.format('CampaignFortMax_%d', zoneId), maxHp)
+end
+
+-- Sum the HP of every fortification still standing, refresh battle.fortHp, and
+-- return it. The fort mobs' own HP is the single source of truth, so nothing has
+-- to hook damage events to keep this accurate.
+xi.campaignBattle.getFortificationHp = function(battle)
+    local total = 0
+
+    for _, entityId in ipairs(battle.fortifications) do
+        local fort = GetMobByID(entityId)
+
+        if fort ~= nil and fort:isAlive() then
+            total = total + fort:getHP()
+        end
+    end
+
+    battle.fortHp = total
+
+    return total
+end
+
+-- Called when one of the fort's target points is destroyed.
+xi.campaignBattle.onFortificationDestroyed = function(zone, battle)
+    battle.fortsDestroyed = battle.fortsDestroyed + 1
+    xi.campaignBattle.getFortificationHp(battle)
+
+    printf('[CampaignBattle] Zone %d: Fort target point destroyed (%d/%d down, %d HP left)',
+        zone:getID(), battle.fortsDestroyed, #battle.fortifications, battle.fortHp)
+
+    publishFortHp(zone:getID(), battle.fortHp, battle.maxFortHp)
+
+    xi.campaignBattle.checkBattleEnd(zone, battle)
+end
+
+-- Spawn the zone's fort as a set of attackable target points.
 xi.campaignBattle.spawnFortifications = function(zone, battle)
     local zoneId = zone:getID()
     local data   = getZoneData(zoneId)
 
-    if not data or not data.fortPositions then
+    if not data or (not data.fortPosition and not data.fortPositions) then
         printf('[CampaignBattle] No fortification data for zone %d', zoneId)
         return false
     end
 
-    for i, pos in ipairs(data.fortPositions) do
+    -- Seed the fort's HP from the region's real fortification value.
+    local regionPoints = getZoneFortificationPoints(zone)
+
+    if regionPoints ~= nil and regionPoints > 0 then
+        battle.fortPoints     = regionPoints
+        battle.fortFromRegion = true
+    else
+        battle.fortPoints     = data.defaultFortPoints or FORT_BOOTSTRAP_POINTS
+        battle.fortFromRegion = false
+
+        printf('[CampaignBattle] Zone %d reports %s fortifications; bootstrapping %d point(s). Result will NOT persist.',
+            zoneId, tostring(regionPoints), battle.fortPoints)
+    end
+
+    -- A fort whose owner is the beastmen is attacked BY players (offensive battle).
+    -- A fort owned by an allied nation is attacked BY beastmen (defensive battle).
+    local control        = getZoneControlNation(zone)
+    local fortAllegiance = control == xi.campaign.control.BEASTMEN and
+        xi.allegiance.MOB or
+        xi.allegiance.PLAYER
+
+    -- ONE fort. Resolve its anchor, then place a target point at each offset.
+    -- data.fortPositions[1] is accepted as the anchor so existing zone data works
+    -- unchanged (every zone currently defines a single central outpost position).
+    local anchor = data.fortPosition or data.fortPositions[1]
+
+    if anchor == nil then
+        printf('[CampaignBattle] Zone %d has fort data but no anchor position', zoneId)
+        return false
+    end
+
+    local offsets = data.fortTargetOffsets or FORT_DEFAULT_TARGET_OFFSETS
+
+    -- An empty offsets table would divide by zero below and yield infinite HP.
+    if #offsets == 0 then
+        printf('[CampaignBattle] Zone %d has an empty fortTargetOffsets; using defaults.', zoneId)
+        offsets = FORT_DEFAULT_TARGET_OFFSETS
+    end
+
+    local targetPositions = {}
+
+    for _, off in ipairs(offsets) do
+        table.insert(targetPositions,
+        {
+            anchor[1] + (off[1] or 0),
+            anchor[2] + (off[2] or 0),
+            anchor[3] + (off[3] or 0),
+            off[4] or anchor[4] or 0,
+        })
+    end
+
+    -- The fort's HP pool is split evenly across its target points, so razing the
+    -- whole fort costs the same damage regardless of how many points it presents.
+    local pointCount = #targetPositions
+    local hpPerPoint = math.max(1, math.floor(battle.fortPoints * FORT_HP_PER_POINT / pointCount))
+
+    battle.fortAllegiance = fortAllegiance
+    battle.maxFortHp      = hpPerPoint * pointCount
+    battle.fortHp         = battle.maxFortHp
+
+    for _, pos in ipairs(targetPositions) do
         local fort = zone:insertDynamicEntity({
-            objtype              = xi.objType.NPC,
+            objtype              = xi.objType.MOB,
+            allegiance           = fortAllegiance,
             name                 = 'Fortification',
             packetName           = 'Fortification',
             look                 = data.fortLook or 2702, -- Default fortification model
@@ -124,30 +312,49 @@ xi.campaignBattle.spawnFortifications = function(zone, battle)
             y                    = pos[2],
             z                    = pos[3],
             rotation             = pos[4] or 0,
+            groupId              = data.fortGroupId or 1,
+            groupZoneId          = xi.zone.GM_HOME,
+            minLevel             = data.fortLevel or 75,
+            maxLevel             = data.fortLevel or 75,
             releaseIdOnDisappear = true,
-            entityFlags          = 0x0000,
+            isAggroable          = true, -- others may target it; it never aggros back
 
-            onTrigger = function(player, npc)
-                -- Players can interact to check fortification status
-                player:printToPlayer(string.format(
-                    'Fortification HP: %d/%d',
-                    battle.fortHp,
-                    battle.maxFortHp
-                ))
+            onMobDeath = function(mobArg, playerArg, optParams)
+                xi.campaignBattle.onFortificationDestroyed(zone, battle)
             end,
         })
 
         if fort then
-            fort:setStatus(xi.status.NORMAL)
+            fort:setSpawn(pos[1], pos[2], pos[3], pos[4] or 0)
+            fort:setRoamFlags(xi.roamFlag.SCRIPTED)
+            fort:spawn()
+            DisallowRespawn(fort:getID(), true)
+
+            -- Inert structure: attackable, but takes no action of its own.
+            fort:setAutoAttackEnabled(false)
+            fort:setMagicCastingEnabled(false)
+            fort:setMobAbilityEnabled(false)
+            fort:setAggressive(false)
+            fort:setMobMod(xi.mobMod.NO_MOVE, 1)
+            fort:setMobMod(xi.mobMod.NO_AGGRO, 1)
+            fort:setMobMod(xi.mobMod.NO_LINK, 1)
+            fort:setMobMod(xi.mobMod.NO_REST, 1)  -- a damaged fort must not self-heal
+            fort:setMobMod(xi.mobMod.NO_DROPS, 1)
+            fort:setMobMod(xi.mobMod.EXP_BONUS, -100)
+
+            -- HP must be set AFTER spawn(), which initialises stats from the pool.
+            fort:setMaxHP(hpPerPoint)
+            fort:setHP(hpPerPoint)
+
             table.insert(battle.fortifications, fort:getID())
         end
     end
 
-    -- Set initial fortification HP based on the zone's current fortification value
-    battle.maxFortHp = data.maxFortHp or 5000
-    battle.fortHp    = battle.maxFortHp
+    printf('[CampaignBattle] Zone %d: Fort spawned with %d target point(s), %d pts -> %d HP (%d HP each, allegiance %d)',
+        zoneId, #battle.fortifications, battle.fortPoints, battle.maxFortHp, hpPerPoint, fortAllegiance)
 
-    printf('[CampaignBattle] Zone %d: Spawned %d fortification(s)', zoneId, #battle.fortifications)
+    publishFortHp(zoneId, battle.fortHp, battle.maxFortHp)
+
     return true
 end
 
@@ -352,13 +559,30 @@ xi.campaignBattle.endBattle = function(zoneId)
 
     battle.state = xi.campaignBattle.state.ENDING
 
-    -- Despawn all fortification NPCs
-    for _, entityId in ipairs(battle.fortifications) do
-        local entity = GetNPCByID(entityId)
-        if entity then
-            entity:setStatus(xi.status.DISAPPEAR)
-        end
+    -- Persist this battle's fortification damage back to the region.
+    -- Read HP BEFORE despawning, while the fort mobs still exist.
+    -- CampaignSetFortification sets an ABSOLUTE value (the world server clamps it
+    -- to 0..max_fortifications), so write the points still standing.
+    if battle.fortFromRegion then
+        local remainingHp     = xi.campaignBattle.getFortificationHp(battle)
+        local remainingPoints = math.floor(remainingHp / FORT_HP_PER_POINT)
+
+        CampaignSetFortification(zoneId, remainingPoints)
+
+        printf('[CampaignBattle] Zone %d: Fortification %d -> %d points (%d HP left)',
+            zoneId, battle.fortPoints, remainingPoints, remainingHp)
+    else
+        printf('[CampaignBattle] Zone %d: Fortification NOT persisted (battle was bootstrapped, not seeded from region).',
+            zoneId)
     end
+
+    -- Despawn all fortification mobs
+    for _, entityId in ipairs(battle.fortifications) do
+        DespawnMob(entityId, zone)
+    end
+
+    -- Clear published fort telemetry (no battle running)
+    publishFortHp(zoneId, 0, 0)
 
     -- Despawn all allied NPCs (dynamic mobs with player allegiance)
     for _, entityId in ipairs(battle.alliedNpcs) do
@@ -411,17 +635,18 @@ xi.campaignBattle.checkWaveComplete = function(zone, battle)
             printf('[CampaignBattle] Zone %d: Wave %d cleared, next wave incoming...', zoneId, battle.waveCount)
 
             -- Find a valid entity to attach the timer to (use first fort or surviving ally)
+            -- Fortifications are MOBS, so they must be looked up with GetMobByID.
             local timerEntity = nil
             for _, entityId in ipairs(battle.fortifications) do
-                local npc = GetNPCByID(entityId)
-                if npc then
-                    timerEntity = npc
+                local fort = GetMobByID(entityId)
+                if fort then
+                    timerEntity = fort
                     break
                 end
             end
 
             if timerEntity then
-                timerEntity:timer(15000, function(npcArg)
+                timerEntity:timer(15000, function(entityArg)
                     if activeBattles[zoneId] and activeBattles[zoneId].state == xi.campaignBattle.state.ACTIVE then
                         -- Clear dead mob references before spawning new wave
                         battle.beastmanMobs = {}
@@ -437,9 +662,36 @@ xi.campaignBattle.checkWaveComplete = function(zone, battle)
     end
 end
 
--- Called when an allied NPC dies. Checks if all allies are dead (battle lost).
+-- Called when an allied NPC dies, or when a fortification is destroyed.
+-- Ends the battle if either side has lost its objective.
 xi.campaignBattle.checkBattleEnd = function(zone, battle)
     local zoneId = zone:getID()
+
+    -- All fortifications razed? Whoever was attacking them has won.
+    if #battle.fortifications > 0 then
+        local fortsAlive = 0
+
+        for _, entityId in ipairs(battle.fortifications) do
+            local fort = GetMobByID(entityId)
+
+            if fort ~= nil and fort:isAlive() then
+                fortsAlive = fortsAlive + 1
+            end
+        end
+
+        if fortsAlive <= 0 then
+            -- Beastman-held forts razed = allies won; allied forts razed = beastmen won.
+            if battle.fortAllegiance == xi.allegiance.MOB then
+                printf('[CampaignBattle] Zone %d: Beastman fortifications razed! Allied victory.', zoneId)
+            else
+                printf('[CampaignBattle] Zone %d: Allied fortifications razed! Beastman victory.', zoneId)
+            end
+
+            xi.campaignBattle.endBattle(zoneId)
+
+            return
+        end
+    end
 
     -- Count remaining alive allies
     local alive = 0
@@ -564,6 +816,38 @@ xi.campaignBattle.onGameHour = function(zone)
 
     local hour   = VanadielHour()
     local battle = activeBattles[zoneId]
+
+    -- External request from the ServerManager UI takes priority over the automatic
+    -- cycle: it bypasses the cooldown, start-hour, and random-chance gates below.
+    local requestVar = battleRequestVar(zoneId)
+    local request    = GetServerVariable(requestVar)
+
+    if request ~= xi.campaignBattle.request.NONE then
+        -- Always clear first, so a request is consumed exactly once even if it fails.
+        SetServerVariable(requestVar, xi.campaignBattle.request.NONE)
+
+        if request == xi.campaignBattle.request.START then
+            if battle then
+                printf('[CampaignBattle] Zone %d: start requested but a battle is already active; ignoring.', zoneId)
+            else
+                printf('[CampaignBattle] Zone %d: start requested externally (ServerManager).', zoneId)
+                xi.campaignBattle.startBattle(zoneId)
+
+                return
+            end
+        elseif request == xi.campaignBattle.request.STOP then
+            if battle then
+                printf('[CampaignBattle] Zone %d: stop requested externally (ServerManager).', zoneId)
+                xi.campaignBattle.endBattle(zoneId)
+            else
+                printf('[CampaignBattle] Zone %d: stop requested but no battle is active; ignoring.', zoneId)
+            end
+
+            return
+        else
+            printf('[CampaignBattle] Zone %d: unknown battle request value %d; ignoring.', zoneId, request)
+        end
+    end
 
     -- If battle is active, check for timeout
     if battle and battle.state == xi.campaignBattle.state.ACTIVE then

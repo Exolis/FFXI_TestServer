@@ -82,16 +82,22 @@ local function showActiveOpStatus(player)
     if xi.campaignOps.isObjectiveMet(player) then
         player:printToPlayer('  Status: OBJECTIVE COMPLETE - Speak to me to collect reward!')
     else
-        if opData.opType == xi.campaignOps.type.RESOURCE_PROCUREMENT or
-           opData.opType == xi.campaignOps.type.SUPPLY_MANUFACTURE then
+        if
+            opData.opType == xi.campaignOps.type.RESOURCE_PROCUREMENT or
+            opData.opType == xi.campaignOps.type.SUPPLY_MANUFACTURE
+        then
             player:printToPlayer('  Status: Trade the required items to me.')
-        elseif opData.opType == xi.campaignOps.type.SECURITY or
-               opData.opType == xi.campaignOps.type.OFFENSIVE or
-               opData.opType == xi.campaignOps.type.DEFENSIVE or
-               opData.opType == xi.campaignOps.type.MILITARY_TRAINING then
+        elseif
+            opData.opType == xi.campaignOps.type.SECURITY or
+            opData.opType == xi.campaignOps.type.OFFENSIVE or
+            opData.opType == xi.campaignOps.type.DEFENSIVE or
+            opData.opType == xi.campaignOps.type.MILITARY_TRAINING
+        then
             player:printToPlayer('  Status: Defeat targets in the field, then report back.')
-        elseif opData.opType == xi.campaignOps.type.SUPPLY_TRANSPORT or
-               opData.opType == xi.campaignOps.type.INTEL_GATHERING then
+        elseif
+            opData.opType == xi.campaignOps.type.SUPPLY_TRANSPORT or
+            opData.opType == xi.campaignOps.type.INTEL_GATHERING
+        then
             player:printToPlayer('  Status: Complete the objective in the field, then report back.')
         end
     end
@@ -130,9 +136,11 @@ entity.onTrade = function(player, npc, trade)
         end
 
         -- Try to handle as item trade for procurement/manufacture ops
-        if opData and
-           (opData.opType == xi.campaignOps.type.RESOURCE_PROCUREMENT or
-            opData.opType == xi.campaignOps.type.SUPPLY_MANUFACTURE) then
+        if
+            opData and
+            (opData.opType == xi.campaignOps.type.RESOURCE_PROCUREMENT or
+            opData.opType == xi.campaignOps.type.SUPPLY_MANUFACTURE)
+        then
             if xi.campaignOps.handleTrade(player, trade) then
                 local progress = xi.campaignOps.getProgress(player)
                 player:printToPlayer(string.format('Items received. Progress: %d/%d',

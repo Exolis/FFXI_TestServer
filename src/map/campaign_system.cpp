@@ -69,7 +69,7 @@ void LoadState()
             {
                 auto* handler = PZone->campaignHandler();
 
-                uint8 nation = (uint8)(handler->GetZoneControl() + 1) * 2;
+                uint8 nation = handler->GetZoneControl();
                 switch (nation)
                 {
                     case CampaignControl::SandoriaMask:
@@ -215,9 +215,9 @@ void HandleMessage(CampaignMessage type, const std::span<const uint8> data)
                 // Update all zone handlers with fresh data
                 zoneutils::ForEachZone([](CZone* PZone)
                 {
-                    if (PZone->m_CampaignHandler != nullptr && PZone->m_CampaignHandler->m_PZone != nullptr)
+                    if (PZone->campaignHandler() != nullptr && PZone->campaignHandler()->m_PZone != nullptr)
                     {
-                        PZone->m_CampaignHandler->LoadCampaignZone(PZone);
+                        PZone->campaignHandler()->LoadCampaignZone(PZone);
                     }
                 });
 
@@ -227,7 +227,7 @@ void HandleMessage(CampaignMessage type, const std::span<const uint8> data)
                 // Push updated packets to all online players in campaign zones
                 zoneutils::ForEachZone([](CZone* PZone)
                 {
-                    if (PZone->m_CampaignHandler != nullptr && PZone->m_CampaignHandler->m_PZone != nullptr)
+                    if (PZone->campaignHandler() != nullptr && PZone->campaignHandler()->m_PZone != nullptr)
                     {
                         PZone->ForEachChar([](CCharEntity* PChar)
                         {

@@ -209,7 +209,11 @@ class DatabaseManager:
             self.disconnect()
 
     def update_server_variable(self, varname, value, expiry=0):
-        """Update a server_variable by name."""
+        """Update a server_variable by name.
+
+        Only updates an EXISTING row. Use set_server_variable() when the row
+        may not exist yet (e.g. writing a campaign battle request).
+        """
         if not self.connect():
             return False
         conn = self.connection
@@ -223,5 +227,120 @@ class DatabaseManager:
         except mysql.connector.Error as err:
             print(f"Error updating server_variable: {err}")
             return False
+        finally:
+            self.disconnect()
+
+    def set_server_variable(self, varname, value, expiry=0):
+        """Upsert a server_variable, creating the row if it does not exist.
+
+        The map server reads these with GetServerVariable(), which issues a fresh
+        SELECT every call, so a value written here is visible to Lua immediately.
+        """
+        if not self.connect():
+            return False
+        conn = self.connection
+        assert conn is not None
+        try:
+            cursor = conn.cursor()
+            sql = (
+                "INSERT INTO server_variables (`name`, `value`, `expiry`) "
+                "VALUES (%s, %s, %s) "
+                "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `expiry` = VALUES(`expiry`)"
+            )
+            cursor.execute(sql, (varname, value, expiry))
+            conn.commit()
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error setting server_variable: {err}")
+            return False
+        finally:
+            self.disconnect()
+
+    def request_campaign_battle(self, zone_id, action):
+        """Ask the map server to start (1) or stop (2) a Campaign Battle in a zone.
+
+        Writes CampaignBattleReq_<zoneId>, which xi.campaignBattle.onGameHour polls.
+        The map server consumes and clears it within one Vana'diel hour
+        (~144 real seconds), so this is a REQUEST, not an immediate action.
+        """
+        return self.set_server_variable(f"CampaignBattleReq_{int(zone_id)}", int(action))
+
+    def fetch_campaign_fort_status(self) -> list[dict[str, Any]] | None:
+        """Fort health per campaign zone.
+
+        Combines persistent region values from campaign_map with the live in-battle
+        HP the map server publishes into server_variables (CampaignFortHp_<zone> /
+        CampaignFortMax_<zone>). Live HP is 0 when no battle is running.
+        """
+        if not self.connect():
+            return None
+        conn = self.connection
+        assert conn is not None
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(
+                """
+                SELECT
+                    m.id,
+                    m.zoneid,
+                    m.isbattle,
+                    m.nation,
+                    m.current_fortifications,
+                    m.max_fortifications,
+                    COALESCE(hp.value, 0)  AS live_fort_hp,
+                    COALESCE(mx.value, 0)  AS live_fort_max
+                FROM campaign_map m
+                LEFT JOIN server_variables hp
+                    ON hp.name = CONCAT('CampaignFortHp_', m.zoneid)
+                LEFT JOIN server_variables mx
+                    ON mx.name = CONCAT('CampaignFortMax_', m.zoneid)
+                ORDER BY m.id
+                """
+            )
+            result = cursor.fetchall()
+            return cast(list[dict[str, Any]], result)
+        except mysql.connector.Error as err:
+            print(f"Error fetching campaign fort status: {err}")
+            return None
+        finally:
+            self.disconnect()
+
+    def fetch_campaign_ops(self) -> list[dict[str, Any]] | None:
+        """Campaign Ops state per character.
+
+        Ops state lives in char_vars (CampaignOp_ActiveOp / _Progress / _Credits),
+        so this pivots those rows into one row per character. Only characters that
+        have at least one CampaignOp_ var are returned.
+        """
+        if not self.connect():
+            return None
+        conn = self.connection
+        assert conn is not None
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(
+                """
+                SELECT
+                    c.charid,
+                    c.charname,
+                    MAX(CASE WHEN v.varname = 'CampaignOp_ActiveOp' THEN v.value END) AS active_op,
+                    MAX(CASE WHEN v.varname = 'CampaignOp_Progress' THEN v.value END) AS progress,
+                    MAX(CASE WHEN v.varname = 'CampaignOp_Credits'  THEN v.value END) AS credits
+                FROM char_vars v
+                JOIN chars c ON c.charid = v.charid
+                WHERE v.varname IN (
+                    'CampaignOp_ActiveOp',
+                    'CampaignOp_Progress',
+                    'CampaignOp_Credits'
+                )
+                GROUP BY c.charid, c.charname
+                ORDER BY c.charname
+                """
+            )
+            result = cursor.fetchall()
+            return cast(list[dict[str, Any]], result)
+        except mysql.connector.Error as err:
+            print(f"Error fetching campaign ops: {err}")
+            return None
         finally:
             self.disconnect()

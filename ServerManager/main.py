@@ -16,6 +16,8 @@ try:
         QHBoxLayout,
         QMessageBox,
         QHeaderView,
+        QComboBox,
+        QGroupBox,
     )
 except ImportError:
     import sys
@@ -82,6 +84,11 @@ class ServerManagerApp(QMainWindow):
         self.conquest_system_tab = QWidget()
         self.setup_conquest_system_tab()
         self.tabs.addTab(self.conquest_system_tab, "Conquest System")
+
+        # Campaign Battle Tab (start/stop battles, fort health, ops monitor)
+        self.campaign_battle_tab = QWidget()
+        self.setup_campaign_battle_tab()
+        self.tabs.addTab(self.campaign_battle_tab, "Campaign Battle")
 
         # Server Variables Tab
         self.server_variables_tab = QWidget()
@@ -596,6 +603,181 @@ class ServerManagerApp(QMainWindow):
             "Update Complete",
             f"Updated {success_count} of {len(rows)} selected server variables.",
         )
+
+
+    # ======================================================================
+    # Campaign Battle Tab
+    #
+    # Battle control goes through the DB-backed `server_variables` table, because
+    # the MAP server (which owns battles) has no HTTP surface -- only the WORLD
+    # server does. The map server polls CampaignBattleReq_<zoneId> from
+    # xi.campaignBattle.onGameHour, so Start/Stop are REQUESTS that take effect
+    # within one Vana'diel hour (~144 real seconds), not instant actions.
+    # ======================================================================
+
+    # Zones that have Campaign Battle data configured.
+    # Source of truth: the keys of xi.campaignBattle.zoneData in
+    # scripts/globals/campaign_battle_data.lua. Each of these zones also calls
+    # xi.campaignBattle.onGameHour from its Zone.lua, which is what polls the
+    # battle request written below -- a zone missing that hook would silently
+    # ignore requests.
+    CAMPAIGN_BATTLE_ZONES = [81, 82, 83, 84, 88, 89, 90, 91, 95, 96, 97, 98, 136, 137]
+
+    REQUEST_START = 1
+    REQUEST_STOP = 2
+
+    def setup_campaign_battle_tab(self):
+        layout = QVBoxLayout()
+
+        # ---------------- Battle control ----------------
+        control_box = QGroupBox("Battle Control")
+        control_layout = QVBoxLayout()
+
+        control_layout.addWidget(
+            QLabel(
+                "Start/Stop is queued for the map server and applies within one "
+                "Vana'diel hour (~2.5 real minutes)."
+            )
+        )
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Zone:"))
+
+        self.battle_zone_combo = QComboBox()
+        for zone_id in self.CAMPAIGN_BATTLE_ZONES:
+            name = self.zone_id_to_name.get(zone_id, f"Zone {zone_id}")
+            self.battle_zone_combo.addItem(f"{name} ({zone_id})", zone_id)
+        row.addWidget(self.battle_zone_combo)
+
+        self.start_battle_button = QPushButton("Request Start")
+        self.start_battle_button.clicked.connect(self.request_battle_start)
+        row.addWidget(self.start_battle_button)
+
+        self.stop_battle_button = QPushButton("Request Stop")
+        self.stop_battle_button.clicked.connect(self.request_battle_stop)
+        row.addWidget(self.stop_battle_button)
+
+        row.addStretch()
+        control_layout.addLayout(row)
+        control_box.setLayout(control_layout)
+        layout.addWidget(control_box)
+
+        # ---------------- Refresh ----------------
+        self.refresh_battle_button = QPushButton("Refresh Fort Health & Ops")
+        self.refresh_battle_button.clicked.connect(self.load_campaign_battle_data)
+        layout.addWidget(self.refresh_battle_button)
+
+        # ---------------- Fort health ----------------
+        layout.addWidget(QLabel("Fort Health"))
+        self.fort_table = QTableWidget()
+        self.fort_table.setColumnCount(7)
+        self.fort_table.setHorizontalHeaderLabels(
+            [
+                "Zone",
+                "Zone ID",
+                "In Battle",
+                "Region Fort",
+                "Region Max",
+                "Live Fort HP",
+                "Live Fort Max",
+            ]
+        )
+        header = self.fort_table.horizontalHeader()
+        if header is not None:
+            header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        layout.addWidget(self.fort_table)
+
+        # ---------------- Campaign Ops ----------------
+        layout.addWidget(QLabel("Campaign Ops (per character)"))
+        self.ops_table = QTableWidget()
+        self.ops_table.setColumnCount(4)
+        self.ops_table.setHorizontalHeaderLabels(
+            ["Character", "Active Op", "Progress", "Op Credits"]
+        )
+        ops_header = self.ops_table.horizontalHeader()
+        if ops_header is not None:
+            ops_header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        layout.addWidget(self.ops_table)
+
+        self.campaign_battle_tab.setLayout(layout)
+
+    def _selected_battle_zone_id(self):
+        return self.battle_zone_combo.currentData()
+
+    def _request_battle(self, action, verb):
+        zone_id = self._selected_battle_zone_id()
+        if zone_id is None:
+            QMessageBox.information(self, "No Zone", "Please select a zone.")
+            return
+
+        if self.db_manager.request_campaign_battle(zone_id, action):
+            QMessageBox.information(
+                self,
+                "Request Queued",
+                f"Battle {verb} queued for zone {zone_id}.\n\n"
+                "The map server picks this up on its next Vana'diel hour tick "
+                "(within ~2.5 real minutes).",
+            )
+        else:
+            QMessageBox.warning(
+                self,
+                "Request Failed",
+                f"Could not write the battle {verb} request. Check the DB connection.",
+            )
+
+    def request_battle_start(self):
+        self._request_battle(self.REQUEST_START, "start")
+
+    def request_battle_stop(self):
+        self._request_battle(self.REQUEST_STOP, "stop")
+
+    def load_campaign_battle_data(self):
+        # ---- Fort health ----
+        fort_data = self.db_manager.fetch_campaign_fort_status()
+        if fort_data is None:
+            QMessageBox.warning(
+                self, "Error", "Failed to load fort status from the database."
+            )
+        else:
+            self.fort_table.setRowCount(len(fort_data))
+            for row, record in enumerate(fort_data):
+                zone_id = int(record.get("zoneid", 0))
+                zone_name = self.zone_id_to_name.get(zone_id, f"Zone {zone_id}")
+                values = [
+                    zone_name,
+                    str(zone_id),
+                    "Yes" if int(record.get("isbattle", 0)) else "No",
+                    str(record.get("current_fortifications", 0)),
+                    str(record.get("max_fortifications", 0)),
+                    str(record.get("live_fort_hp", 0)),
+                    str(record.get("live_fort_max", 0)),
+                ]
+                for col, value in enumerate(values):
+                    self.fort_table.setItem(row, col, QTableWidgetItem(value))
+
+            self.fort_table.resizeColumnsToContents()
+
+        # ---- Campaign Ops ----
+        ops_data = self.db_manager.fetch_campaign_ops()
+        if ops_data is None:
+            QMessageBox.warning(
+                self, "Error", "Failed to load Campaign Ops from the database."
+            )
+            return
+
+        self.ops_table.setRowCount(len(ops_data))
+        for row, record in enumerate(ops_data):
+            active_op = record.get("active_op")
+            values = [
+                str(record.get("charname", "")),
+                "None" if not active_op else str(active_op),
+                str(record.get("progress") or 0),
+                str(record.get("credits") or 0),
+            ]
+            for col, value in enumerate(values):
+                self.ops_table.setItem(row, col, QTableWidgetItem(value))
+
+        self.ops_table.resizeColumnsToContents()
 
 
 def main():

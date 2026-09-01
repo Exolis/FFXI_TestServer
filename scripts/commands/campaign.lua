@@ -4,6 +4,7 @@
 -----------------------------------
 require('scripts/globals/campaign_battle')
 require('scripts/globals/campaign_ops')
+require('scripts/globals/campaign_medals')
 -----------------------------------
 ---@type TCommand
 local commandObj = {}
@@ -32,6 +33,14 @@ local function printHelp(player)
     player:printToPlayer('  !campaign ops cancel                    - Cancel active op')
     player:printToPlayer('  !campaign ops progress <amount>         - Set op progress')
     player:printToPlayer('  !campaign ops list                      - List all defined ops')
+    player:printToPlayer('  --- Campaign Medals ---')
+    player:printToPlayer('  !campaign medal                         - Show your rank, score, validity, cooldown')
+    player:printToPlayer('  !campaign medal evaluate                - Run an evaluation now (respects cooldown)')
+    player:printToPlayer('  !campaign medal force                   - Evaluate ignoring the cooldown')
+    player:printToPlayer('  !campaign medal promote                 - Award the next rank')
+    player:printToPlayer('  !campaign medal demote [steps]          - Remove rank(s) (default 1)')
+    player:printToPlayer('  !campaign medal score <amount>          - Set evaluation score')
+    player:printToPlayer('  !campaign medal renew                   - Reset the 30-day validity')
 end
 
 local nationNames =
@@ -268,6 +277,84 @@ commandObj.onTrigger = function(player, subcommand, arg1, arg2, arg3)
         else
             player:printToPlayer('Unknown ops subcommand. Use: !campaign ops help')
             player:printToPlayer('  credits, accept, complete, cancel, progress, list')
+        end
+
+    elseif subcommand == 'medal' then
+        local medalCmd = arg1 and string.lower(arg1) or nil
+        local medal    = xi.campaign.medal
+
+        if medalCmd == nil then
+            local rank      = medal.getRank(player)
+            local score     = medal.getScore(player)
+            local threshold = medal.scoreForPromotion(rank)
+            local cooldown  = medal.evalCooldownRemaining(player)
+            local validity  = medal.validityRemaining(player)
+
+            player:printToPlayer(string.format('Medal: %s (rank %d/%d)',
+                medal.getRankName(rank), rank, medal.MAX_RANK))
+            player:printToPlayer(string.format('Service score: %d / %d for next promotion', score, threshold))
+            player:printToPlayer(string.format('Valid: %s (%d hours left)',
+                medal.isValid(player) and 'yes' or 'NO', math.floor(validity / 3600)))
+
+            if cooldown > 0 then
+                player:printToPlayer(string.format('Evaluation available in %d hours.', math.ceil(cooldown / 3600)))
+            else
+                player:printToPlayer('Evaluation available now.')
+            end
+
+            player:printToPlayer(string.format('Allied Tag capacity: %d points/min', medal.getPointsPerMinute(rank)))
+
+        elseif medalCmd == 'evaluate' or medalCmd == 'force' then
+            -- 'force' clears the cooldown stamp first so the outcome can be tested
+            -- without waiting out the 120-hour timer.
+            if medalCmd == 'force' then
+                player:setCharVar('CampaignMedal_LastEval', 0)
+            end
+
+            local result, newRank, message = medal.evaluate(player)
+
+            player:printToPlayer(message)
+
+            if result ~= nil then
+                player:printToPlayer(string.format('Rank is now %s (%d).', medal.getRankName(newRank), newRank))
+            end
+
+        elseif medalCmd == 'promote' then
+            local newRank = medal.promote(player)
+
+            if newRank == nil then
+                player:printToPlayer('Already at the highest rank.')
+            else
+                player:printToPlayer(string.format('Promoted to %s (%d).', medal.getRankName(newRank), newRank))
+            end
+
+        elseif medalCmd == 'demote' then
+            local steps   = tonumber(arg2) or 1
+            local newRank = medal.demote(player, steps)
+
+            player:printToPlayer(string.format('Rank is now %s (%d).', medal.getRankName(newRank), newRank))
+
+        elseif medalCmd == 'score' then
+            local amount = tonumber(arg2)
+
+            if amount == nil then
+                player:printToPlayer('Usage: !campaign medal score <amount>')
+                return
+            end
+
+            player:setCharVar('CampaignMedal_Score', amount)
+            player:printToPlayer(string.format('Service score set to %d.', medal.getScore(player)))
+
+        elseif medalCmd == 'renew' then
+            if medal.renew(player) then
+                player:printToPlayer('Medal validity renewed (30 days).')
+            else
+                player:printToPlayer('You hold no medal to renew.')
+            end
+
+        else
+            player:printToPlayer('Unknown medal subcommand.')
+            player:printToPlayer('  evaluate, force, promote, demote, score, renew')
         end
 
     else

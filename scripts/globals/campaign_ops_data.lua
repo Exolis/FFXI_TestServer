@@ -15,6 +15,8 @@
 --   notesReward       : Allied Notes granted on completion
 --   onComplete        : Optional function called on completion for side effects
 -----------------------------------
+require('scripts/globals/campaign')
+-----------------------------------
 xi = xi or {}
 xi.campaignOps = xi.campaignOps or {}
 
@@ -46,9 +48,10 @@ xi.campaignOps.ops =
         notesReward       = 200,
 
         onComplete = function(player, opData)
-            -- Add resources to a Bastok-front zone
-            -- North Gustaberg [S] (zone 88) gets +50 resources
-            CampaignSetFortification(88, 50)
+            -- Supply ops feed FORTIFICATIONS rather than influence.
+            -- Must go through addFortification: CampaignSetFortification sets an
+            -- absolute value, so a bare +50 would overwrite the zone's total.
+            xi.campaignOps.addFortification(xi.zone.NORTH_GUSTABERG_S, 50)
             player:printToPlayer('Supply reserves bolstered. Nation resources increased.')
         end,
     },
@@ -74,6 +77,9 @@ xi.campaignOps.ops =
         deliveryZone      = xi.zone.NORTH_GUSTABERG_S,
         expReward         = 600,
         notesReward       = 250,
+        -- Reinforcing the front nudges the region our way. Resolved against
+        -- deliveryZone by applyOpInfluence().
+        influenceReward   = 5,
 
         onComplete = function(player, opData)
             player:printToPlayer('Supplies delivered successfully. Morale boosted.')
@@ -98,6 +104,7 @@ xi.campaignOps.ops =
         targetMobs        = { 'Quadav' }, -- family name filter
         expReward         = 700,
         notesReward       = 300,
+        influenceReward   = 6,
 
         onComplete = function(player, opData)
             player:printToPlayer('Area secured. Threats neutralized.')
@@ -119,6 +126,8 @@ xi.campaignOps.ops =
         tradeItems        = { { xi.item.FIRE_CRYSTAL, 8 } },
         expReward         = 500,
         notesReward       = 200,
+        -- No influenceReward by design: manufacture/procurement ops (1001, 1004)
+        -- feed production and fortifications, not the region's influence bar.
 
         onComplete = function(player, opData)
             player:printToPlayer('Crystals delivered to the forge. Production continues.')
@@ -141,10 +150,11 @@ xi.campaignOps.ops =
         targetMobs        = { 'Quadav' },
         expReward         = 800,
         notesReward       = 350,
+        -- Offensive op: disrupting supply lines shifts the region toward us.
+        -- Applied by xi.campaignOps.applyOpInfluence() against targetZone.
+        influenceReward   = 10,
 
         onComplete = function(player, opData)
-            -- Reduce beastman influence in the target zone
-            CampaignSetInfluence(90, xi.campaign.army.BASTOK, 10)
             player:printToPlayer('Enemy supply line disrupted. Bastok influence grows.')
         end,
     },
@@ -165,10 +175,13 @@ xi.campaignOps.ops =
         targetMobs        = { 'Quadav' },
         expReward         = 800,
         notesReward       = 350,
+        -- Holding the line keeps the region ours.
+        influenceReward   = 8,
 
         onComplete = function(player, opData)
-            -- Restore fortifications
-            CampaignSetFortification(88, 30)
+            -- Restore fortifications (+30). addFortification reads the current
+            -- value first; CampaignSetFortification alone would SET it to 30.
+            xi.campaignOps.addFortification(xi.zone.NORTH_GUSTABERG_S, 30)
             player:printToPlayer('Fortifications held. Defenses restored.')
         end,
     },
@@ -190,6 +203,7 @@ xi.campaignOps.ops =
         targetZone        = xi.zone.PASHHOW_MARSHLANDS_S,
         expReward         = 600,
         notesReward       = 250,
+        influenceReward   = 5,
 
         onComplete = function(player, opData)
             player:printToPlayer('Intelligence gathered. Report filed.')
@@ -213,6 +227,8 @@ xi.campaignOps.ops =
         targetMobs        = {}, -- Any mob in the zone counts
         expReward         = 500,
         notesReward       = 200,
+        -- Training is rear-echelon work: real but minor war contribution.
+        influenceReward   = 3,
 
         onComplete = function(player, opData)
             player:printToPlayer('Training session complete. Recruits show improvement.')
